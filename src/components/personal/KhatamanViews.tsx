@@ -21,28 +21,32 @@ import {
   toggleKhatamanJuzDone,
   type KhatamanGroup,
 } from '@/stores/khataman';
-import { currentUid, isAuthenticated } from '@/stores/auth';
+import { currentUid } from '@/stores/auth';
 import { fetchQuranMeta, type JuzRef } from '@/lib/quran/api';
 import { showToast } from '@/stores/toast';
-import { LoginRequired } from '@/components/auth/LoginRequired';
+import { AuthGateSkeleton, LoginRequired, useAuthGate } from '@/components/auth/LoginRequired';
 import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui/Primitives';
 
 /* ======================== LIST KHATAMAN ======================== */
 export function KhatamanListView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
 
   const groups = myKhatamanGroups.value;
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <PageHeader
           title="Khataman bersama"
           description="Khatam Al-Qur'an bersama keluarga, komunitas, atau teman: setiap orang mengambil jatah juz."
         />
-        <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+        )}
       </div>
     );
   }
@@ -128,7 +132,8 @@ export function KhatamanListView() {
 
 /* ======================== GROUP KHATAMAN ======================== */
 export function KhatamanGroupView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const [groupId, setGroupId] = useState('');
   const [group, setGroup] = useState<KhatamanGroup | null>(null);
   const [juzRefs, setJuzRefs] = useState<JuzRef[]>([]);
@@ -155,7 +160,7 @@ export function KhatamanGroupView() {
     return unsub;
   }, [loggedIn]);
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <a
@@ -166,7 +171,11 @@ export function KhatamanGroupView() {
           Kembali ke daftar khataman
         </a>
         <PageHeader title="Khataman bersama" />
-        <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+        )}
       </div>
     );
   }

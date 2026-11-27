@@ -35,15 +35,15 @@ import {
   toggleSavedSurah,
 } from '@/stores/library';
 import { playAyah } from '@/stores/audio-player';
-import { isAuthenticated } from '@/stores/auth';
-import { LoginRequired } from '@/components/auth/LoginRequired';
+import { AuthGateSkeleton, LoginRequired, useAuthGate } from '@/components/auth/LoginRequired';
 import { AyahCard } from '@/components/quran/AyahCard';
 import { Rosette } from '@/components/ui/Rosette';
 import { Badge, Button, Card, EmptyState, Modal, PageHeader } from '@/components/ui/Primitives';
 
 /* ======================== BACAANKU ======================== */
 export function LastReadView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const lr = lastRead.value;
   const [ayah, setAyah] = useState<Ayah | null>(null);
   const [surah, setSurah] = useState<SurahMeta | null>(null);
@@ -68,7 +68,9 @@ export function LastReadView() {
         description="Ayat terakhir yang kamu tandai, supaya mudah melanjutkan bacaan."
       />
 
-      {!loggedIn ? (
+      {gate === 'loading' ? (
+        <AuthGateSkeleton />
+      ) : gate === 'guest' ? (
         <LoginRequired description="Masuk untuk menyimpan dan melanjutkan bacaan terakhirmu di perangkat mana pun." />
       ) : !lr ? (
         <EmptyState
@@ -108,7 +110,8 @@ export function LastReadView() {
 
 /* ======================== TERSIMPAN (FAVORIT & KOLEKSI) ======================== */
 export function FavoritesView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const [tab, setTab] = useState<'favorites' | 'collections'>('favorites');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
@@ -135,14 +138,18 @@ export function FavoritesView() {
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <PageHeader
           title="Tersimpan"
           description="Ayat favorit dan koleksi yang kamu simpan."
         />
-        <LoginRequired description="Masuk untuk menyimpan ayat favorit dan membukanya kembali kapan saja." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk menyimpan ayat favorit dan membukanya kembali kapan saja." />
+        )}
       </div>
     );
   }
@@ -289,7 +296,8 @@ export function FavoritesView() {
 
 /* ======================== DETAIL KOLEKSI ======================== */
 export function CollectionDetailView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const [colId, setColId] = useState('');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
@@ -315,7 +323,7 @@ export function CollectionDetailView() {
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <a
@@ -326,7 +334,11 @@ export function CollectionDetailView() {
           Kembali ke Tersimpan
         </a>
         <PageHeader title="Koleksi" />
-        <LoginRequired description="Masuk untuk membuat koleksi ayat dan membukanya kembali kapan saja." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk membuat koleksi ayat dan membukanya kembali kapan saja." />
+        )}
       </div>
     );
   }
@@ -470,7 +482,8 @@ export function CollectionDetailView() {
 
 /* ======================== CATATAN ======================== */
 export function NotesView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<{ ayaId: number; surahId: number; ayahNumber: number; text: string } | null>(null);
@@ -491,14 +504,18 @@ export function NotesView() {
     });
   }, [list, query, surahMap]);
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <PageHeader
           title="Catatan"
           description="Catatan pribadimu pada ayat-ayat Al-Qur'an."
         />
-        <LoginRequired description="Masuk untuk menulis catatan pada ayat dan membukanya kembali kapan saja." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk menulis catatan pada ayat dan membukanya kembali kapan saja." />
+        )}
       </div>
     );
   }
@@ -636,7 +653,8 @@ export function NotesView() {
 
 /* ======================== SURAH PILIHAN ======================== */
 export function SavedSurahsView() {
-  const loggedIn = isAuthenticated.value;
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const ids = savedSurahs.value;
 
@@ -647,14 +665,18 @@ export function SavedSurahsView() {
 
   const list = surahs.filter((s) => ids.includes(s.id));
 
-  if (!loggedIn) {
+  if (gate !== 'authenticated') {
     return (
       <div>
         <PageHeader
           title="Surah pilihan"
           description="Surah yang kamu tandai dengan ikon bintang."
         />
-        <LoginRequired description="Masuk untuk menyimpan surah pilihan dan membukanya kembali dengan cepat." />
+        {gate === 'loading' ? (
+          <AuthGateSkeleton />
+        ) : (
+          <LoginRequired description="Masuk untuk menyimpan surah pilihan dan membukanya kembali dengan cepat." />
+        )}
       </div>
     );
   }
