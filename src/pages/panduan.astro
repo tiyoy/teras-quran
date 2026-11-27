@@ -1,0 +1,16 @@
+---
+import PublicLayout from '@/layouts/PublicLayout.astro';
+import { GuideFilter } from '@/components/public/GuideFilter';
+---
+
+<PublicLayout title="Panduan Pengguna · Al-Qur'an Digital — Teras Qur'an">
+  <div class="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold tracking-tight">Panduan pengguna</h1>
+      <p class="mt-2 text-sm text-[var(--muted-foreground)]">
+        Cara memakai setiap fitur Al-Qur&apos;an Digital oleh Teras Qur&apos;an: membaca, audio, tajwid, hafalan, khataman, jadwal sholat, kiblat, dan tasbih digital.
+      </p>
+    </div>
+    <GuideFilter client:load />
+  </div>
+</PublicLayout>

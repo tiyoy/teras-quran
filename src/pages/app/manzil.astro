@@ -1,0 +1,8 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { QuranIndexView } from '@/components/quran/IndexViews';
+---
+
+<AppLayout title="Manzil 1–7">
+  <QuranIndexView client:load kind="manzil" />
+</AppLayout>

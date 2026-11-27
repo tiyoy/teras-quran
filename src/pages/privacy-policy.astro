@@ -1,0 +1,52 @@
+---
+import PublicLayout from '@/layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Kebijakan Privasi · Al-Qur'an Digital — Teras Qur'an">
+  <article class="mx-auto w-full max-w-3xl space-y-6 px-4 py-10 sm:px-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">Kebijakan Privasi</h1>
+      <p class="mt-2 text-sm text-[var(--muted-foreground)]">
+        Terakhir diperbarui pada 27 November 2026
+      </p>
+    </div>
+
+    <div class="space-y-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm leading-relaxed text-[var(--foreground)]">
+      <section class="space-y-2">
+        <h2 class="text-base font-bold">1. Prinsip Privasi Teras Qur&apos;an</h2>
+        <p class="text-[var(--muted-foreground)]">
+          Kami hanya menyimpan data yang benar-benar diperlukan agar fitur aplikasi berjalan. Kami tidak meminta nomor telepon, tanggal lahir, alamat rumah, atau jenis kelamin, dan kami tidak menjual data pengguna kepada pihak mana pun.
+        </p>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-base font-bold">2. Data yang Disimpan di Akun (Firebase)</h2>
+        <p class="text-[var(--muted-foreground)]">
+          Jika kamu memilih masuk dengan Google atau Email, data berikut disimpan secara aman di akun Firebase milikmu:
+        </p>
+        <ul class="list-disc space-y-1 pl-5 text-[var(--muted-foreground)]">
+          <li><strong>Akun:</strong> nama tampilan dan alamat email.</li>
+          <li><strong>Bacaan:</strong> bacaan terakhir, hari membaca, target harian, dan progres khatam.</li>
+          <li><strong>Hafalan:</strong> rentang ayat yang dihafal dan jadwal murajaahnya.</li>
+          <li><strong>Pribadi:</strong> ayat favorit, koleksi ayat, surah pilihan, catatan pribadi, dan pengaturan pengingat.</li>
+          <li><strong>Khataman:</strong> keikutsertaan grup khataman bersama dan status juz yang diambil.</li>
+          <li><strong>Tasbih Digital:</strong> daftar dzikir custom beserta target dan rekapitulasi harian.</li>
+        </ul>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-base font-bold">3. Data yang Hanya Disimpan di Perangkat</h2>
+        <p class="text-[var(--muted-foreground)]">
+          Preferensi tema, bahasa, ukuran huruf Arab, pilihan qari, lokasi jadwal sholat/kiblat (termasuk koordinat GPS), teks Al-Qur&apos;an offline, serta audio surah yang diunduh disimpan sepenuhnya di perangkatmu (<code>localStorage</code> &amp; Cache Storage) dan tidak pernah dikirim ke server.
+        </p>
+      </section>
+
+      <section class="space-y-2">
+        <h2 class="text-base font-bold">4. Kendali Penuh atas Datamu</h2>
+        <p class="text-[var(--muted-foreground)]">
+          Kamu dapat mengunduh seluruh salinan data akun dalam format JSON kapan saja lewat <strong>Pengaturan → Akun / Privasi → Unduh data saya</strong>, atau menghapus akun beserta seluruh data pribadimu secara permanen lewat <strong>Pengaturan → Zona bahaya</strong>.
+        </p>
+      </section>
+    </div>
+  </article>
+</PublicLayout>

@@ -1,0 +1,8 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { SurahListView } from '@/components/quran/SurahListView';
+---
+
+<AppLayout title="Daftar 114 Surah Al-Qur'an">
+  <SurahListView client:load />
+</AppLayout>

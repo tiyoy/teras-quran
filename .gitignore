@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.local
+.env.*.local
+.superpowers/
+screenshot.zip
+*.log
+.DS_Store
+Thumbs.db
+PRD.md

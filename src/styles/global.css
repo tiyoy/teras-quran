@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+@font-face {
+  font-family: "LPMQ";
+  src: url("/fonts/lpmq.woff2") format("woff2");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Amiri Quran";
+  src: url("/fonts/amiri-quran.woff2") format("woff2");
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --background: #f7f9fc;
+  --foreground: #0c1726;
+  --card: #ffffff;
+  --card-foreground: #0c1726;
+  --popover: #ffffff;
+  --popover-foreground: #0c1726;
+  --primary: #0f52ba;
+  --primary-hover: #0b4196;
+  --primary-foreground: #f7faff;
+  --secondary: #ebf1f9;
+  --secondary-foreground: #122747;
+  --muted: #edf2f7;
+  --muted-foreground: #52627a;
+  --accent: #e1ecfa;
+  --accent-foreground: #0a3475;
+  --border: #dce3ee;
+  --input: #d2dceb;
+  --ring: #2b6fd6;
+  --sidebar: #f1f5fa;
+  --sidebar-foreground: #0c1726;
+  --sidebar-border: #dce3ee;
+  --gold: #c6922e;
+  --gold-surface: #fbf4e4;
+  --gold-ink: #7a5306;
+  --destructive: #d92d20;
+  --destructive-surface: #feeceb;
+  --success: #15803d;
+  --success-surface: #e8f7ed;
+  --radius: 0.75rem;
+
+  --tajwid-ghunnah: #9a5505;
+  --tajwid-ikhfa: #b12083;
+  --tajwid-idgham-bigunnah: #853dc2;
+  --tajwid-idgham-bilagunnah: #2e5bda;
+  --tajwid-idgham-mutajanisain: #0e7397;
+  --tajwid-iqlab: #0a7575;
+  --tajwid-qalqalah: #7c6705;
+  --tajwid-mad-thabii: #017c1f;
+  --tajwid-mad-wajib-jaiz: #c21919;
+  --tajwid-mad-arid: #5e6f03;
+  --tajwid-mad-lazim: #900d30;
+  --tajwid-silent: var(--muted-foreground);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #080f1a;
+  --foreground: #eaf0f8;
+  --card: #111c2e;
+  --card-foreground: #eaf0f8;
+  --popover: #111c2e;
+  --popover-foreground: #eaf0f8;
+  --primary: #5c9aff;
+  --primary-hover: #78acff;
+  --primary-foreground: #061326;
+  --secondary: #182438;
+  --secondary-foreground: #eaf0f8;
+  --muted: #152033;
+  --muted-foreground: #93a4bd;
+  --accent: #142744;
+  --accent-foreground: #d7e6ff;
+  --border: #1f2e47;
+  --input: #273854;
+  --ring: #5c9aff;
+  --sidebar: #0c1524;
+  --sidebar-foreground: #eaf0f8;
+  --sidebar-border: #1f2e47;
+  --gold: #dfb65b;
+  --gold-surface: #2a2210;
+  --gold-ink: #f0cd84;
+  --destructive: #f97066;
+  --destructive-surface: #331416;
+  --success: #4ade80;
+  --success-surface: #112a1c;
+
+  --tajwid-ghunnah: #fe9d41;
+  --tajwid-ikhfa: #fe8acf;
+  --tajwid-idgham-bigunnah: #cc9fff;
+  --tajwid-idgham-bilagunnah: #95b6fe;
+  --tajwid-idgham-mutajanisain: #43c7fd;
+  --tajwid-iqlab: #1ad1d1;
+  --tajwid-qalqalah: #d8b501;
+  --tajwid-mad-thabii: #51d75e;
+  --tajwid-mad-wajib-jaiz: #fd978a;
+  --tajwid-mad-arid: #a9c701;
+  --tajwid-mad-lazim: #ffbcc0;
+  --tajwid-silent: var(--muted-foreground);
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-quran: "LPMQ", "Amiri Quran", "Scheherazade New", serif;
+  --font-tajwid: "Amiri Quran", "LPMQ", serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-gold: var(--gold);
+  --color-gold-surface: var(--gold-surface);
+  --color-gold-ink: var(--gold-ink);
+  --color-destructive: var(--destructive);
+  --color-destructive-surface: var(--destructive-surface);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--foreground);
+  min-height: 100dvh;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.quran-text {
+  font-family: "LPMQ", "Amiri Quran", "Scheherazade New", serif;
+  line-height: 2.2;
+  word-spacing: 2px;
+}
+
+.tajwid-text {
+  font-family: "Amiri Quran", "LPMQ", serif;
+  line-height: 2.35;
+}
+
+.tajwid-ghunnah { color: var(--tajwid-ghunnah); }
+.tajwid-ikhfa { color: var(--tajwid-ikhfa); }
+.tajwid-idgham-bigunnah { color: var(--tajwid-idgham-bigunnah); }
+.tajwid-idgham-bilagunnah { color: var(--tajwid-idgham-bilagunnah); }
+.tajwid-idgham-mutajanisain { color: var(--tajwid-idgham-mutajanisain); }
+.tajwid-iqlab { color: var(--tajwid-iqlab); }
+.tajwid-qalqalah { color: var(--tajwid-qalqalah); }
+.tajwid-mad-thabii { color: var(--tajwid-mad-thabii); }
+.tajwid-mad-wajib-jaiz { color: var(--tajwid-mad-wajib-jaiz); }
+.tajwid-mad-arid { color: var(--tajwid-mad-arid); }
+.tajwid-mad-lazim { color: var(--tajwid-mad-lazim); }
+.tajwid-silent { color: var(--tajwid-silent); }
+
+/* Editorial solid frame rules for landing page */
+.home-frame {
+  --frame-half: min(50% - 0.5rem, 32rem);
+}
+
+.grid-rule {
+  position: relative;
+  height: 0;
+  border-top: 1px solid var(--border);
+}
+
+.grid-node {
+  position: absolute;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  background: var(--background);
+  border: 1px solid var(--gold);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.grid-node-start { left: 0; }
+.grid-node-end { left: 100%; }
+
+/* Custom scrollbar - flat solid */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Range slider - flat Sapphire */
+input[type="range"] {
+  accent-color: var(--primary);
+}

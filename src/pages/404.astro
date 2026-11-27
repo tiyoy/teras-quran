@@ -1,0 +1,27 @@
+---
+import PublicLayout from '@/layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Halaman tidak ditemukan · Teras Qur'an">
+  <div class="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center px-4 py-20 text-center">
+    <p class="text-sm font-bold tracking-wider text-[var(--primary)]">404</p>
+    <h1 class="mt-2 text-2xl font-bold tracking-tight">Halaman tidak ditemukan</h1>
+    <p class="mt-2 text-sm text-[var(--muted-foreground)]">
+      Halaman yang kamu cari tidak ada atau sudah dipindahkan. Periksa kembali alamatnya atau lanjutkan dari beranda.
+    </p>
+    <div class="mt-6 flex flex-wrap justify-center gap-2.5">
+      <a
+        href="/app"
+        class="inline-flex h-10 items-center rounded-xl bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] no-underline"
+      >
+        Ke beranda aplikasi
+      </a>
+      <a
+        href="/app/surah"
+        class="inline-flex h-10 items-center rounded-xl border border-[var(--border)] bg-[var(--card)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] no-underline"
+      >
+        Daftar surah
+      </a>
+    </div>
+  </div>
+</PublicLayout>

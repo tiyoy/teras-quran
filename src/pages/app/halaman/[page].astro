@@ -1,0 +1,16 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { MushafPageView } from '@/components/quran/MushafPageView';
+
+export function getStaticPaths() {
+  return Array.from({ length: 604 }, (_, i) => ({
+    params: { page: String(i + 1) },
+  }));
+}
+
+const pageNum = Number(Astro.params.page);
+---
+
+<AppLayout title={`Halaman ${pageNum} Mushaf`}>
+  <MushafPageView client:load pageNumber={pageNum} />
+</AppLayout>

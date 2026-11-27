@@ -1,0 +1,8 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { NotesView } from '@/components/personal/PersonalLibraryViews';
+---
+
+<AppLayout title="Catatan">
+  <NotesView client:load />
+</AppLayout>

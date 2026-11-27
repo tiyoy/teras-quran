@@ -1,0 +1,8 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { QuranIndexView } from '@/components/quran/IndexViews';
+---
+
+<AppLayout title="Ruku 1–556">
+  <QuranIndexView client:load kind="ruku" />
+</AppLayout>

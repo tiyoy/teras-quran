@@ -1,0 +1,42 @@
+---
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = "Baca Al-Qur'an 30 juz dengan teks Arab, latin, terjemahan, tafsir Kemenag RI, audio murottal per ayat, jadwal murajaah hafalan, jadwal sholat, kiblat, dan tasbih digital. Gratis, tanpa akun.",
+} = Astro.props;
+---
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#0F52BA" />
+<title>{title}</title>
+<meta name="description" content={description} />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Al-Qur'an Digital — Teras Qur'an" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<script is:inline>
+  (function () {
+    function applySavedTheme() {
+      try {
+        var raw = localStorage.getItem('tq:theme');
+        var mode = raw ? JSON.parse(raw) : 'system';
+        var dark =
+          mode === 'dark' ||
+          (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+      } catch (e) {}
+    }
+    applySavedTheme();
+    document.addEventListener('astro:after-swap', applySavedTheme);
+  })();
+</script>

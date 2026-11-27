@@ -1,0 +1,59 @@
+---
+import PublicLayout from '@/layouts/PublicLayout.astro';
+---
+
+<PublicLayout title="Tentang · Al-Qur'an Digital — Teras Qur'an">
+  <article class="mx-auto w-full max-w-3xl space-y-6 px-4 py-10 sm:px-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight">Tentang Al-Qur&apos;an Digital</h1>
+      <p class="mt-2 text-sm text-[var(--muted-foreground)]">
+        Al-Qur&apos;an Digital Bahasa Indonesia oleh Teras Qur&apos;an — ringan, gratis, tanpa iklan, dan bersumber terbuka dengan lisensi MIT.
+      </p>
+    </div>
+
+    <div class="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm leading-relaxed text-[var(--foreground)]">
+      <p>
+        <strong>Teras Qur&apos;an</strong> dibangun menggunakan framework <strong>Astro.js</strong> dan <strong>Preact</strong> agar sangat ringan dan cepat dibuka di berbagai perangkat, serta <strong>Firebase</strong> (Authentication &amp; Cloud Firestore) untuk sinkronisasi data bacaan, hafalan, catatan, khataman, dan tasbih digital lintas perangkat.
+      </p>
+      <p>
+        Seluruh fitur membaca Al-Qur&apos;an, tafsir, pencarian, audio murottal, jadwal sholat, kompas kiblat, Asmaul Husna, dan Tasbih Digital dapat digunakan langsung tanpa kewajiban masuk akun.
+      </p>
+    </div>
+
+    <div class="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm">
+      <h2 class="text-base font-bold">Sumber Data &amp; Atribusi</h2>
+      <ul class="list-disc space-y-2 pl-5 text-[var(--muted-foreground)]">
+        <li>
+          <strong class="text-[var(--foreground)]">Teks Arab, Transliterasi, Terjemahan ID, &amp; Tafsir Kemenag RI:</strong> eQuran.id API v2 &amp; Lajnah Pentashihan Mushaf Al-Qur&apos;an (Kementerian Agama RI).
+        </li>
+        <li>
+          <strong class="text-[var(--foreground)]">Metadata Juz/Halaman/Manzil/Ruku/Sajdah, Terjemahan EN (Saheeh International), &amp; Markup Tajwid:</strong> AlQuran.cloud, Tanzil.net, dan quran-tajweed (CC BY 4.0).
+        </li>
+        <li>
+          <strong class="text-[var(--foreground)]">Audio Murottal:</strong> Islamic Network CDN (8 pilihan qari Murattal &amp; Mujawwad).
+        </li>
+        <li>
+          <strong class="text-[var(--foreground)]">Tipografi:</strong> LPMQ Isep Misbah (Kemenag RI), Amiri Quran (SIL OFL), dan Plus Jakarta Sans Variable.
+        </li>
+        <li>
+          <strong class="text-[var(--foreground)]">Perhitungan Waktu Sholat:</strong> Pustaka astronomi Adhan (kriteria Kemenag RI: Subuh 20°, Isya 18°, Ashar Syafi&apos;i, ihtiyat 2 menit).
+        </li>
+      </ul>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <a
+        href="/app"
+        class="inline-flex h-10 items-center rounded-xl bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] no-underline"
+      >
+        Buka aplikasi
+      </a>
+      <a
+        href="/panduan"
+        class="inline-flex h-10 items-center rounded-xl border border-[var(--border)] bg-[var(--card)] px-5 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] no-underline"
+      >
+        Baca panduan
+      </a>
+    </div>
+  </article>
+</PublicLayout>

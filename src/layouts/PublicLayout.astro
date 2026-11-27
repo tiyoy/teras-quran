@@ -1,0 +1,63 @@
+---
+import BaseHead from './BaseHead.astro';
+import { BrandLogo } from '@/components/ui/BrandLogo';
+import { ThemeToggle } from '@/components/shell/ThemeToggle';
+import { LocaleToggle } from '@/components/shell/LocaleToggle';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Al-Qur'an Digital — Teras Qur'an",
+  description,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <BaseHead title={title} description={description} />
+  </head>
+  <body class="flex min-h-dvh flex-col bg-[var(--background)] text-[var(--foreground)]">
+    <header class="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]">
+      <div class="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
+        <BrandLogo href="/" />
+        <div class="ml-auto flex items-center gap-1">
+          <a
+            href="/panduan"
+            class="hidden h-9 items-center rounded-lg px-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] sm:inline-flex no-underline"
+          >
+            Panduan
+          </a>
+          <LocaleToggle client:load />
+          <ThemeToggle client:load />
+          <a
+            href="/app"
+            class="ml-1 inline-flex h-9 items-center rounded-lg bg-[var(--primary)] px-3.5 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors no-underline"
+          >
+            Buka aplikasi
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex flex-1 flex-col">
+      <slot />
+    </main>
+
+    <footer class="border-t border-[var(--border)] bg-[var(--background)]">
+      <div class="mx-auto flex w-full max-w-5xl flex-col items-center gap-2 px-4 py-6 text-center text-xs text-[var(--muted-foreground)] sm:flex-row sm:justify-between sm:text-left">
+        <p>
+          Al-Qur'an Digital oleh <a href="/tentang" class="font-medium text-[var(--foreground)] underline-offset-4 hover:underline">Teras Qur'an</a>. Lisensi MIT. © <script is:inline>document.write(new Date().getFullYear());</script> Cecep Maulanaツ.
+        </p>
+        <nav class="flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <a href="/panduan" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Panduan</a>
+          <a href="/tentang" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Tentang</a>
+          <a href="/privacy-policy" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Kebijakan privasi</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

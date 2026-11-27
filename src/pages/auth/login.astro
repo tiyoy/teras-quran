@@ -1,0 +1,8 @@
+---
+import AuthLayout from '@/layouts/AuthLayout.astro';
+import { LoginForm } from '@/components/auth/AuthForms';
+---
+
+<AuthLayout title="Masuk">
+  <LoginForm client:load />
+</AuthLayout>

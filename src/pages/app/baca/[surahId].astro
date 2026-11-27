@@ -1,0 +1,16 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { SurahReaderView } from '@/components/quran/SurahReaderView';
+
+export function getStaticPaths() {
+  return Array.from({ length: 114 }, (_, i) => ({
+    params: { surahId: String(i + 1) },
+  }));
+}
+
+const surahId = Number(Astro.params.surahId);
+---
+
+<AppLayout title={`Baca Surah ke-${surahId}`}>
+  <SurahReaderView client:load surahId={surahId} />
+</AppLayout>

@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Seluruh data pribadi pengguna hanya dapat diakses pemilik akun
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(uid);
+
+        match /{nested}/{nestedId} {
+          allow read, write: if isOwner(uid);
+        }
+      }
+    }
+
+    // Khataman bersama 30 juz
+    match /khataman/{groupId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 1
+        && request.resource.data.title.size() <= 60;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
+
+      match /participants/{uid} {
+        allow read: if isSignedIn();
+        allow write: if isOwner(uid);
+      }
+    }
+
+    // Notifikasi pribadi pengguna
+    match /notifications/{notifId} {
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}
