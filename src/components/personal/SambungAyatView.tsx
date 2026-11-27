@@ -10,6 +10,7 @@ import {
 import { generateSambungQuestions, type SambungQuestion } from '@/lib/hifz/sambung-logic';
 import { toGlobalAyah } from '@/lib/quran/meta';
 import { hifzItems } from '@/stores/hifz';
+import { isAuthenticated } from '@/stores/auth';
 import { playAyah } from '@/stores/audio-player';
 import { Badge, Button, Card, PageHeader } from '@/components/ui/Primitives';
 
@@ -89,6 +90,7 @@ export function SambungAyatView() {
     }
   }
 
+  const loggedIn = isAuthenticated.value;
   const current = questions[idx];
   const toRevise = grades.filter((g) => g.grade !== 'good');
 
@@ -127,10 +129,22 @@ export function SambungAyatView() {
                   source === 'hafalan' ? 'bg-[var(--card)] text-[var(--foreground)]' : 'text-[var(--muted-foreground)]'
                 }`}
               >
-                Hafalanku ({hifzItems.value.length})
+                Hafalanku ({loggedIn ? hifzItems.value.length : 0})
               </button>
             </div>
           </div>
+
+          {source === 'hafalan' && !loggedIn && (
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-3 text-xs text-[var(--muted-foreground)]">
+              <span>Masuk untuk berlatih dari hafalanmu.</span>
+              <a
+                href="/auth/login?redirect=%2Fapp%2Fsambung-ayat"
+                class="font-semibold text-[var(--primary)] hover:underline no-underline"
+              >
+                Masuk
+              </a>
+            </div>
+          )}
 
           {source === 'surah' && (
             <div>
@@ -168,7 +182,7 @@ export function SambungAyatView() {
           </div>
 
           <Button
-            disabled={busy || (source === 'hafalan' && hifzItems.value.length === 0)}
+            disabled={busy || (source === 'hafalan' && (!loggedIn || hifzItems.value.length === 0))}
             onClick={startQuiz}
           >
             {busy ? 'Menyiapkan soal…' : 'Mulai latihan'}

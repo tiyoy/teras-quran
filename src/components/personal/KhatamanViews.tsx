@@ -21,17 +21,31 @@ import {
   toggleKhatamanJuzDone,
   type KhatamanGroup,
 } from '@/stores/khataman';
-import { currentUid } from '@/stores/auth';
+import { currentUid, isAuthenticated } from '@/stores/auth';
 import { fetchQuranMeta, type JuzRef } from '@/lib/quran/api';
 import { showToast } from '@/stores/toast';
+import { LoginRequired } from '@/components/auth/LoginRequired';
 import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui/Primitives';
 
 /* ======================== LIST KHATAMAN ======================== */
 export function KhatamanListView() {
+  const loggedIn = isAuthenticated.value;
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
 
   const groups = myKhatamanGroups.value;
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <PageHeader
+          title="Khataman bersama"
+          description="Khatam Al-Qur'an bersama keluarga, komunitas, atau teman: setiap orang mengambil jatah juz."
+        />
+        <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+      </div>
+    );
+  }
 
   async function onCreate(e: Event) {
     e.preventDefault();
@@ -114,6 +128,7 @@ export function KhatamanListView() {
 
 /* ======================== GROUP KHATAMAN ======================== */
 export function KhatamanGroupView() {
+  const loggedIn = isAuthenticated.value;
   const [groupId, setGroupId] = useState('');
   const [group, setGroup] = useState<KhatamanGroup | null>(null);
   const [juzRefs, setJuzRefs] = useState<JuzRef[]>([]);
@@ -122,6 +137,10 @@ export function KhatamanGroupView() {
   const actorUid = currentUid.value ?? 'local-user';
 
   useEffect(() => {
+    if (!loggedIn) {
+      setLoading(false);
+      return;
+    }
     const id = new URLSearchParams(window.location.search).get('id') || '';
     setGroupId(id);
     fetchQuranMeta().then((m) => setJuzRefs(m.juzs)).catch(() => {});
@@ -134,7 +153,23 @@ export function KhatamanGroupView() {
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [loggedIn]);
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <a
+          href="/app/khataman"
+          class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--primary)] hover:underline no-underline"
+        >
+          <ArrowLeft class="size-3.5" />
+          Kembali ke daftar khataman
+        </a>
+        <PageHeader title="Khataman bersama" />
+        <LoginRequired description="Masuk untuk membuat atau ikut khataman bersama." />
+      </div>
+    );
+  }
 
   async function shareLink() {
     const url = window.location.href;

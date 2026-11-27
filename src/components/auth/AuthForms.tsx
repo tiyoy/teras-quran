@@ -54,6 +54,13 @@ function GoogleIcon() {
   );
 }
 
+function getSafeRedirect(): string {
+  if (typeof window === 'undefined') return '/app';
+  const raw = new URLSearchParams(window.location.search).get('redirect') || '';
+  if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  return '/app';
+}
+
 export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,7 +82,7 @@ export function LoginForm() {
     setBusy(true);
     try {
       await loginWithEmail(email, password);
-      window.location.href = '/app';
+      window.location.href = getSafeRedirect();
     } catch (err) {
       setError(mapAuthError(err));
     } finally {
@@ -88,7 +95,7 @@ export function LoginForm() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      window.location.href = '/app';
+      window.location.href = getSafeRedirect();
     } catch (err) {
       setError(mapAuthError(err));
     } finally {

@@ -35,18 +35,21 @@ import {
   toggleSavedSurah,
 } from '@/stores/library';
 import { playAyah } from '@/stores/audio-player';
+import { isAuthenticated } from '@/stores/auth';
+import { LoginRequired } from '@/components/auth/LoginRequired';
 import { AyahCard } from '@/components/quran/AyahCard';
 import { Rosette } from '@/components/ui/Rosette';
 import { Badge, Button, Card, EmptyState, Modal, PageHeader } from '@/components/ui/Primitives';
 
 /* ======================== BACAANKU ======================== */
 export function LastReadView() {
+  const loggedIn = isAuthenticated.value;
   const lr = lastRead.value;
   const [ayah, setAyah] = useState<Ayah | null>(null);
   const [surah, setSurah] = useState<SurahMeta | null>(null);
 
   useEffect(() => {
-    if (!lr) {
+    if (!loggedIn || !lr) {
       setAyah(null);
       return;
     }
@@ -56,7 +59,7 @@ export function LastReadView() {
         setAyah(list[0] ?? null);
       })
       .catch(() => {});
-  }, [lr?.globalAyahId]);
+  }, [loggedIn, lr?.globalAyahId]);
 
   return (
     <div>
@@ -65,7 +68,9 @@ export function LastReadView() {
         description="Ayat terakhir yang kamu tandai, supaya mudah melanjutkan bacaan."
       />
 
-      {!lr ? (
+      {!loggedIn ? (
+        <LoginRequired description="Masuk untuk menyimpan dan melanjutkan bacaan terakhirmu di perangkat mana pun." />
+      ) : !lr ? (
         <EmptyState
           icon={<Bookmark class="size-5" />}
           title="Belum ada bacaan terakhir"
@@ -103,6 +108,7 @@ export function LastReadView() {
 
 /* ======================== TERSIMPAN (FAVORIT & KOLEKSI) ======================== */
 export function FavoritesView() {
+  const loggedIn = isAuthenticated.value;
   const [tab, setTab] = useState<'favorites' | 'collections'>('favorites');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
@@ -113,20 +119,33 @@ export function FavoritesView() {
   const colList = collections.value;
 
   useEffect(() => {
+    if (!loggedIn) return;
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
-  }, []);
+  }, [loggedIn]);
 
   useEffect(() => {
-    if (!favList.length) {
+    if (!loggedIn || !favList.length) {
       setAyahs([]);
       return;
     }
     fetchAyahsByGlobalIds(favList.map((f) => f.ayaId))
       .then(setAyahs)
       .catch(() => {});
-  }, [favList]);
+  }, [loggedIn, favList]);
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <PageHeader
+          title="Tersimpan"
+          description="Ayat favorit dan koleksi yang kamu simpan."
+        />
+        <LoginRequired description="Masuk untuk menyimpan ayat favorit dan membukanya kembali kapan saja." />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -270,6 +289,7 @@ export function FavoritesView() {
 
 /* ======================== DETAIL KOLEKSI ======================== */
 export function CollectionDetailView() {
+  const loggedIn = isAuthenticated.value;
   const [colId, setColId] = useState('');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
@@ -278,20 +298,38 @@ export function CollectionDetailView() {
 
   useEffect(() => {
     setColId(new URLSearchParams(window.location.search).get('id') || '');
-    fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
-  }, []);
+    if (loggedIn) {
+      fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
+    }
+  }, [loggedIn]);
 
   const col = collections.value.find((c) => c.id === colId) ?? null;
 
   useEffect(() => {
-    if (!col?.ayahIds.length) {
+    if (!loggedIn || !col?.ayahIds.length) {
       setAyahs([]);
       return;
     }
     fetchAyahsByGlobalIds(col.ayahIds).then(setAyahs).catch(() => {});
-  }, [col?.ayahIds]);
+  }, [loggedIn, col?.ayahIds]);
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <a
+          href="/app/favorit"
+          class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--primary)] hover:underline no-underline"
+        >
+          <ArrowLeft class="size-3.5" />
+          Kembali ke Tersimpan
+        </a>
+        <PageHeader title="Koleksi" />
+        <LoginRequired description="Masuk untuk membuat koleksi ayat dan membukanya kembali kapan saja." />
+      </div>
+    );
+  }
 
   if (!col) {
     return (
@@ -432,13 +470,15 @@ export function CollectionDetailView() {
 
 /* ======================== CATATAN ======================== */
 export function NotesView() {
+  const loggedIn = isAuthenticated.value;
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<{ ayaId: number; surahId: number; ayahNumber: number; text: string } | null>(null);
 
   useEffect(() => {
+    if (!loggedIn) return;
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
-  }, []);
+  }, [loggedIn]);
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
   const list = notes.value;
@@ -450,6 +490,18 @@ export function NotesView() {
       return n.text.toLowerCase().includes(q) || sName.includes(q);
     });
   }, [list, query, surahMap]);
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <PageHeader
+          title="Catatan"
+          description="Catatan pribadimu pada ayat-ayat Al-Qur'an."
+        />
+        <LoginRequired description="Masuk untuk menulis catatan pada ayat dan membukanya kembali kapan saja." />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -584,14 +636,28 @@ export function NotesView() {
 
 /* ======================== SURAH PILIHAN ======================== */
 export function SavedSurahsView() {
+  const loggedIn = isAuthenticated.value;
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const ids = savedSurahs.value;
 
   useEffect(() => {
+    if (!loggedIn) return;
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
-  }, []);
+  }, [loggedIn]);
 
   const list = surahs.filter((s) => ids.includes(s.id));
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <PageHeader
+          title="Surah pilihan"
+          description="Surah yang kamu tandai dengan ikon bintang."
+        />
+        <LoginRequired description="Masuk untuk menyimpan surah pilihan dan membukanya kembali dengan cepat." />
+      </div>
+    );
+  }
 
   return (
     <div>

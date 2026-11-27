@@ -22,7 +22,9 @@ import {
 import { getHifzStrength, type HifzItem, type HifzRating } from '@/lib/hifz/sm2';
 import { fetchQuranMeta, fetchSurahAyahs, type Ayah, type SurahMeta } from '@/lib/quran/api';
 import { playAyah } from '@/stores/audio-player';
+import { isAuthenticated } from '@/stores/auth';
 import { showToast } from '@/stores/toast';
+import { LoginRequired } from '@/components/auth/LoginRequired';
 import { Badge, Button, Card, EmptyState, Modal, PageHeader } from '@/components/ui/Primitives';
 
 const STRENGTH_META = {
@@ -32,6 +34,7 @@ const STRENGTH_META = {
 };
 
 export function HifzView() {
+  const loggedIn = isAuthenticated.value;
   const [tab, setTab] = useState<'today' | 'all' | 'progress'>('today');
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [weakOnly, setWeakOnly] = useState(false);
@@ -48,8 +51,9 @@ export function HifzView() {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
+    if (!loggedIn) return;
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
-  }, []);
+  }, [loggedIn]);
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
   const activeReview = reviewQueue[reviewIdx] ?? null;
@@ -93,6 +97,18 @@ export function HifzView() {
   const allItems = weakOnly ? weakHifzItems.value : hifzItems.value;
   const due = dueHifzItems.value;
   const totals = hifzTotals.value;
+
+  if (!loggedIn) {
+    return (
+      <div>
+        <PageHeader
+          title="Hafalan"
+          description="Catat hafalan, murajaah tepat waktu (SM-2), dan lihat progresmu."
+        />
+        <LoginRequired description="Masuk untuk mencatat hafalan dan menerima jadwal murajaah." />
+      </div>
+    );
+  }
 
   return (
     <div>
