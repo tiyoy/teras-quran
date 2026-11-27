@@ -121,14 +121,14 @@ export function SambungAyatView() {
   const toRevise = grades.filter((g) => g.grade !== 'good');
 
   return (
-    <div>
+    <div class="mx-auto w-full max-w-2xl">
       <PageHeader
         title="Latihan sambung ayat"
         description="Lihat atau dengarkan satu ayat, lalu lanjutkan ayat sesudahnya dari hafalanmu."
       />
 
       {stage === 'setup' && (
-        <Card class="max-w-xl space-y-5 p-5 sm:p-6">
+        <Card class="space-y-5 p-5 sm:p-6">
           {/* Sumber soal */}
           <div>
             <p class="mb-2 text-sm font-semibold text-[var(--foreground)]">Sumber soal</p>
@@ -265,7 +265,7 @@ export function SambungAyatView() {
       )}
 
       {stage === 'quiz' && current && (
-        <Card class="max-w-2xl space-y-5 p-6">
+        <Card class="space-y-5 p-6">
           <div class="flex items-center justify-between">
             <Badge variant="primary" class="tabular-nums">
               Soal {idx + 1} dari {questions.length}
@@ -332,7 +332,7 @@ export function SambungAyatView() {
       )}
 
       {stage === 'done' && (
-        <Card class="max-w-2xl space-y-5 p-6">
+        <Card class="space-y-5 p-6">
           <div>
             <h2 class="text-lg font-bold">Latihan selesai</h2>
             <p class="text-sm text-[var(--muted-foreground)]">
