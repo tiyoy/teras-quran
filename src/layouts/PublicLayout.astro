@@ -27,6 +27,7 @@ const {
         <div class="ml-auto flex items-center gap-1">
           <a
             href="/panduan"
+            data-i18n="nav.guide"
             class="hidden h-9 items-center rounded-lg px-3 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] sm:inline-flex no-underline"
           >
             Panduan
@@ -35,6 +36,7 @@ const {
           <ThemeToggle client:load />
           <a
             href="/app"
+            data-i18n="shell.openApp"
             class="ml-1 inline-flex h-9 items-center rounded-lg bg-[var(--primary)] px-3.5 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors no-underline"
           >
             Buka aplikasi
@@ -53,9 +55,9 @@ const {
           Al-Qur'an Digital oleh <a href="/tentang" class="font-medium text-[var(--foreground)] underline-offset-4 hover:underline">Teras Qur'an</a>. Lisensi MIT. © <script is:inline>document.write(new Date().getFullYear());</script> Cecep Maulanaツ.
         </p>
         <nav class="flex flex-wrap justify-center gap-x-4 gap-y-1">
-          <a href="/panduan" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Panduan</a>
-          <a href="/tentang" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Tentang</a>
-          <a href="/privacy-policy" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Kebijakan privasi</a>
+          <a href="/panduan" data-i18n="nav.guide" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Panduan</a>
+          <a href="/tentang" data-i18n="nav.about" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Tentang</a>
+          <a href="/privacy-policy" data-i18n="nav.privacy" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Kebijakan privasi</a>
         </nav>
       </div>
     </footer>

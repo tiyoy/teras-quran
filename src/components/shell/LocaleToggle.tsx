@@ -1,14 +1,24 @@
+import { useEffect } from 'preact/hooks';
 import { Languages } from 'lucide-preact';
-import { locale, setLocale } from '@/stores/locale';
+import { applyDomLocale, locale, setLocale } from '@/stores/locale';
 
 export function LocaleToggle() {
   const cur = locale.value;
+
+  useEffect(() => {
+    applyDomLocale(locale.value);
+  }, [cur]);
+
   return (
     <button
       type="button"
       onClick={() => setLocale(cur === 'id' ? 'en' : 'id')}
-      aria-label="Ubah bahasa"
-      title={cur === 'id' ? 'Bahasa: Indonesia (klik untuk English)' : 'Language: English (click for Indonesian)'}
+      aria-label={cur === 'id' ? 'Ubah bahasa ke English' : 'Switch language to Indonesian'}
+      title={
+        cur === 'id'
+          ? 'Bahasa: Indonesia (klik untuk English)'
+          : 'Language: English (click for Indonesian)'
+      }
       class="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
     >
       <Languages class="size-4" />
