@@ -24,9 +24,9 @@ const {
   <body class="flex min-h-dvh flex-col bg-[var(--background)] text-[var(--foreground)]">
     <SplashScreen />
     <header class="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]">
-      <div class="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
+      <div class="mx-auto flex h-14 w-full max-w-5xl items-center gap-1.5 px-3 sm:gap-2 sm:px-4">
         <BrandLogo href="/" />
-        <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
           <a
             href="/panduan"
             data-i18n="nav.guide"
@@ -39,7 +39,7 @@ const {
           <a
             href="/app"
             data-i18n="shell.openApp"
-            class="ml-1 inline-flex h-9 items-center rounded-lg bg-[var(--primary)] px-3.5 text-sm font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors no-underline"
+            class="ml-0.5 inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-lg bg-[var(--primary)] px-2.5 text-xs font-medium text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors sm:ml-1 sm:h-9 sm:px-3.5 sm:text-sm no-underline"
           >
             Buka aplikasi
           </a>
@@ -47,7 +47,7 @@ const {
       </div>
     </header>
 
-    <main class="flex flex-1 flex-col">
+    <main class="flex flex-1 flex-col overflow-x-clip">
       <slot />
     </main>
 

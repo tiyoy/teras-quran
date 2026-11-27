@@ -12,10 +12,10 @@ export function BrandLogo({
   return (
     <a
       href={href}
-      class="inline-flex items-center gap-2.5 text-left no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-lg"
+      class="inline-flex min-w-0 shrink-0 items-center gap-2 text-left no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-lg sm:gap-2.5"
     >
-      <span class="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--primary)]">
-        <svg viewBox="0 0 100 100" class="size-9" aria-hidden="true">
+      <span class="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--primary)] sm:size-9">
+        <svg viewBox="0 0 100 100" class="size-8 sm:size-9" aria-hidden="true">
           <rect width="100" height="100" rx="22" fill="var(--primary)" />
           <g transform="translate(50 50) scale(0.92) translate(-50 -56)">
             <path
@@ -43,10 +43,10 @@ export function BrandLogo({
       </span>
       {!compact && (
         <span class="flex flex-col leading-tight">
-          <span class="text-[15px] font-bold tracking-tight text-[var(--foreground)]">
+          <span class="whitespace-nowrap text-[14px] font-bold tracking-tight text-[var(--foreground)] sm:text-[15px]">
             Al-Qur&apos;an Digital
           </span>
-          <span class="text-xs font-medium text-[var(--muted-foreground)]">
+          <span class="whitespace-nowrap text-[11px] font-medium text-[var(--muted-foreground)] sm:text-xs">
             {subtitle}
           </span>
         </span>

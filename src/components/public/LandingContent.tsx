@@ -307,11 +307,11 @@ export function LandingContent() {
   }, [c.pageTitle]);
 
   return (
-    <div class="mx-auto w-full max-w-5xl border-x border-[var(--border)] bg-[var(--background)]">
+    <div class="mx-auto w-full max-w-5xl overflow-x-clip border-x border-[var(--border)] bg-[var(--background)]">
       {/* HERO */}
       <section class="px-5 py-12 sm:px-10 sm:py-16">
         <div class="grid items-center gap-10 lg:grid-cols-12">
-          <div class="lg:col-span-7">
+          <div class="min-w-0 lg:col-span-7">
             <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-xs font-medium text-[var(--muted-foreground)]">
               <span class="size-2 rounded-full bg-[var(--primary)]" />
               {c.badge}
@@ -356,7 +356,7 @@ export function LandingContent() {
           </div>
 
           {/* Preview Card of Al-Fatihah */}
-          <div class="lg:col-span-5">
+          <div class="min-w-0 lg:col-span-5">
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
               <div class="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-3">
                 <div>
@@ -413,9 +413,16 @@ export function LandingContent() {
       </div>
 
       {/* STATS BAR */}
-      <section class="grid grid-cols-2 divide-x divide-y divide-[var(--border)] sm:grid-cols-5 sm:divide-y-0">
+      <section class="grid grid-cols-2 sm:grid-cols-5">
         {c.stats.map((st, idx) => (
-          <div key={idx} class="px-5 py-6 text-center">
+          <div
+            key={idx}
+            class={`px-5 py-6 text-center ${
+              idx === 4 ? 'col-span-2 sm:col-span-1' : ''
+            } ${idx === 1 || idx === 3 ? 'border-l border-[var(--border)]' : ''} ${
+              idx >= 2 ? 'border-t border-[var(--border)] sm:border-t-0' : ''
+            } ${idx > 0 ? 'sm:border-l sm:border-[var(--border)]' : ''}`}
+          >
             <p class="text-2xl font-bold tracking-tight text-[var(--primary)] tabular-nums">{st.num}</p>
             <p class="mt-0.5 text-xs text-[var(--muted-foreground)]">{st.label}</p>
           </div>
