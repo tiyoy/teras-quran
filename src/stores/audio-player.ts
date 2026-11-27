@@ -18,6 +18,7 @@ export interface AudioPrefs {
   repeatAyah: RepeatAyahOption;
   gap: GapOption;
   rate: PlaybackRate;
+  autoScroll: boolean;
 }
 
 export interface RangeRepeat {
@@ -45,8 +46,19 @@ export const audioPrefs = signal<AudioPrefs>({
   repeatAyah: 1,
   gap: 0,
   rate: 1,
+  autoScroll: true,
   ...readStorage<Partial<AudioPrefs>>(PREFS_KEY, {}),
 });
+
+export function scrollAyahIntoView(el: HTMLElement | null): void {
+  if (!el || typeof window === 'undefined') return;
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const tall = el.offsetHeight > window.innerHeight * 0.55;
+  el.scrollIntoView({
+    behavior: reduced ? 'auto' : 'smooth',
+    block: tall ? 'start' : 'center',
+  });
+}
 
 export const currentAyah = signal<Ayah | null>(null);
 export const currentSurahName = signal<string>('');

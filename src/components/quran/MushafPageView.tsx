@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   BookOpen,
   Bookmark,
@@ -15,7 +15,12 @@ import {
   type Ayah,
   type SurahMeta,
 } from '@/lib/quran/api';
-import { playAyah } from '@/stores/audio-player';
+import {
+  audioPrefs,
+  currentAyah,
+  playAyah,
+  scrollAyahIntoView,
+} from '@/stores/audio-player';
 import { isFavoriteAyah, setLastRead, toggleFavoriteAyah } from '@/stores/library';
 import { recordReadAyahs } from '@/stores/progress';
 import { getTranslationText, readerSettings, updateReaderSettings } from '@/stores/reader-settings';
@@ -37,9 +42,12 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
   const [selectedAyah, setSelectedAyah] = useState<Ayah | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [jumpInput, setJumpInput] = useState(String(pageNumber));
+  const lastScrolledAyahId = useRef<number | null>(null);
 
   const settings = readerSettings.value;
   const cappedSize = Math.min(settings.arabicSize, 36);
+  const activeAyah = currentAyah.value;
+  const autoScroll = audioPrefs.value.autoScroll;
 
   useEffect(() => {
     setJumpInput(String(pageNumber));
@@ -64,6 +72,24 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
       alive = false;
     };
   }, [pageNumber]);
+
+  useEffect(() => {
+    if (!activeAyah) {
+      lastScrolledAyahId.current = null;
+      return;
+    }
+    if (!autoScroll || loading || activeAyah.page !== pageNumber) return;
+    if (lastScrolledAyahId.current === activeAyah.i) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      const el = document.getElementById(`page-ayat-${activeAyah.i}`);
+      if (el) {
+        lastScrolledAyahId.current = activeAyah.i;
+        scrollAyahIntoView(el);
+      }
+    });
+    return () => window.cancelAnimationFrame(rafId);
+  }, [autoScroll, loading, activeAyah?.i, activeAyah?.page, pageNumber]);
 
   // Group contiguous ayahs by surahId
   const groups: Array<{ surahId: number; startsHere: boolean; ayahs: Ayah[] }> = [];
@@ -143,18 +169,26 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
                     style={{ fontSize: `${cappedSize}px` }}
                     class="quran-text text-justify text-[var(--foreground)]"
                   >
-                    {grp.ayahs.map((a) => (
-                      <span
-                        key={a.i}
-                        onClick={() => setSelectedAyah(a)}
-                        class="cursor-pointer rounded px-1 transition-colors hover:bg-[var(--accent)]"
-                      >
-                        {a.ar}{' '}
-                        <span class="mx-0.5 inline-block font-sans text-[0.55em] font-semibold text-[var(--primary)]">
-                          ﴿{toArabicNumeral(a.n)}﴾
-                        </span>{' '}
-                      </span>
-                    ))}
+                    {grp.ayahs.map((a) => {
+                      const isCurrent = activeAyah?.i === a.i;
+                      return (
+                        <span
+                          key={a.i}
+                          id={`page-ayat-${a.i}`}
+                          onClick={() => setSelectedAyah(a)}
+                          class={`scroll-mt-24 cursor-pointer rounded px-1 transition-colors ${
+                            isCurrent
+                              ? 'bg-[var(--accent)] ring-1 ring-[var(--primary)]/50'
+                              : 'hover:bg-[var(--accent)]'
+                          }`}
+                        >
+                          {a.ar}{' '}
+                          <span class="mx-0.5 inline-block font-sans text-[0.55em] font-semibold text-[var(--primary)]">
+                            ﴿{toArabicNumeral(a.n)}﴾
+                          </span>{' '}
+                        </span>
+                      );
+                    })}
                   </p>
                 </div>
               );
@@ -233,13 +267,14 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
             <div class="flex flex-wrap gap-2 border-t border-[var(--border)] pt-3">
               <Button
                 size="sm"
-                onClick={() =>
+                onClick={() => {
                   playAyah(
                     selectedAyah,
                     ayahs,
                     surahMap.get(selectedAyah.surahId)?.name ?? ''
-                  )
-                }
+                  );
+                  setSelectedAyah(null);
+                }}
               >
                 <Play class="size-3.5" />
                 Putar

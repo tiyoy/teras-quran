@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   ChevronLeft,
   ChevronRight,
   FileText,
   LayoutList,
+  Pause,
   Play,
   SlidersHorizontal,
   Star,
@@ -16,7 +17,14 @@ import {
   type SurahMeta,
 } from '@/lib/quran/api';
 import type { TajwidSegment } from '@/lib/quran/tajwid-parser';
-import { playAyah } from '@/stores/audio-player';
+import {
+  audioPrefs,
+  currentAyah,
+  isPlaying,
+  playAyah,
+  scrollAyahIntoView,
+  togglePlay,
+} from '@/stores/audio-player';
 import { isSurahSaved, toggleSavedSurah } from '@/stores/library';
 import { recordReadAyahs } from '@/stores/progress';
 import { readerSettings, updateReaderSettings } from '@/stores/reader-settings';
@@ -34,9 +42,14 @@ export function SurahReaderView({ surahId }: { surahId: number }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [targetAyah, setTargetAyah] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(40);
+  const lastScrolledAyahId = useRef<number | null>(null);
 
   const settings = readerSettings.value;
   const saved = isSurahSaved(surahId);
+  const activeAyah = currentAyah.value;
+  const playing = isPlaying.value;
+  const autoScroll = audioPrefs.value.autoScroll;
+  const activeInThisSurah = activeAyah && activeAyah.surahId === surahId ? activeAyah : null;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -88,6 +101,35 @@ export function SurahReaderView({ surahId }: { surahId: number }) {
       .catch(() => {});
   }, [surahId, settings.tajwid]);
 
+  // Reset tracked scroll ayah when changing surah or stopping playback
+  useEffect(() => {
+    if (!activeInThisSurah) {
+      lastScrolledAyahId.current = null;
+    }
+  }, [surahId, activeInThisSurah?.i]);
+
+  // Auto-expand rendered ayahs and smoothly scroll to the ayah currently recited by the qari
+  useEffect(() => {
+    if (!autoScroll || loading || !activeInThisSurah) return;
+
+    if (activeInThisSurah.n > visibleCount) {
+      setVisibleCount((v) => Math.max(v, activeInThisSurah.n + 15));
+      return;
+    }
+
+    if (lastScrolledAyahId.current === activeInThisSurah.i) return;
+
+    const rafId = window.requestAnimationFrame(() => {
+      const el = document.getElementById(`ayat-${activeInThisSurah.n}`);
+      if (el) {
+        lastScrolledAyahId.current = activeInThisSurah.i;
+        scrollAyahIntoView(el);
+      }
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [autoScroll, loading, activeInThisSurah?.i, activeInThisSurah?.n, visibleCount]);
+
   const firstPage = ayahs[0]?.page ?? 1;
   const displayed = ayahs.slice(0, visibleCount);
 
@@ -137,11 +179,29 @@ export function SurahReaderView({ surahId }: { surahId: number }) {
           <Button
             size="sm"
             onClick={() => {
-              if (ayahs.length) playAyah(ayahs[0], ayahs, surah.name);
+              if (!ayahs.length) return;
+              if (activeInThisSurah) {
+                if (!playing && autoScroll) {
+                  lastScrolledAyahId.current = activeInThisSurah.i;
+                  scrollAyahIntoView(document.getElementById(`ayat-${activeInThisSurah.n}`));
+                }
+                togglePlay();
+              } else {
+                playAyah(ayahs[0], ayahs, surah.name);
+              }
             }}
           >
-            <Play class="size-3.5" />
-            Putar surah
+            {activeInThisSurah && playing ? (
+              <>
+                <Pause class="size-3.5" />
+                Jeda audio
+              </>
+            ) : (
+              <>
+                <Play class="size-3.5" />
+                {activeInThisSurah ? 'Lanjutkan audio' : 'Putar surah'}
+              </>
+            )}
           </Button>
 
           <Button

@@ -42,7 +42,7 @@ import {
 } from '@/stores/audio-player';
 import { estimateSurahAudioBytes, getReciter, RECITERS } from '@/data/reciters';
 import { getSurahAyahCount } from '@/lib/quran/meta';
-import { Button, Modal } from '@/components/ui/Primitives';
+import { Button, Modal, Switch } from '@/components/ui/Primitives';
 
 function formatClock(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return '0:00';
@@ -177,6 +177,21 @@ export function AudioPlayerBar() {
         description="Qari, kecepatan, pengulangan, jeda, timer tidur, dan unduhan offline."
       >
         <div class="space-y-5 text-sm">
+          {/* Auto-scroll follow reciter */}
+          <div class="flex items-start justify-between gap-4 rounded-xl border border-[var(--border)] p-3.5">
+            <div>
+              <p class="font-medium">Ikuti ayat (Auto-scroll)</p>
+              <p class="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                Gulir halaman otomatis mengikuti ayat yang sedang dibacakan qari.
+              </p>
+            </div>
+            <Switch
+              checked={audioPrefs.value.autoScroll}
+              onChange={(v) => updateAudioPrefs({ autoScroll: v })}
+              label="Ikuti ayat otomatis saat audio diputar"
+            />
+          </div>
+
           {/* Reciter */}
           <div>
             <p class="mb-2 font-medium">Qari</p>

@@ -738,6 +738,20 @@ export function SettingsView() {
               </p>
             </div>
 
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-medium">Ikuti ayat otomatis (Auto-scroll)</p>
+                <p class="text-xs text-[var(--muted-foreground)]">
+                  Halaman otomatis menggulir mengikuti ayat yang sedang dibacakan qari.
+                </p>
+              </div>
+              <Switch
+                checked={audioPrefs.value.autoScroll}
+                onChange={(v) => updateAudioPrefs({ autoScroll: v })}
+                label="Ikuti ayat otomatis saat audio diputar"
+              />
+            </div>
+
             <div class="space-y-1.5">
               <p class="text-xs font-semibold">Qari</p>
               {RECITERS.map((r) => {
