@@ -1,22 +1,333 @@
-const SHELL_CACHE = 'tq-shell-v2';
+const SHELL_CACHE = 'tq-shell-v3';
 const QURAN_CACHE = 'tq-quran-offline-v1';
 const AUDIO_CACHE = 'tq-audio-v1';
 
-const PRECACHE_URLS = [
+const FALLBACK_SHELL_PAGES = [
+  '/',
+  '/panduan',
+  '/tentang',
+  '/privacy-policy',
+  '/auth/login',
+  '/auth/register',
+  '/auth/reset-password',
+  '/auth/verifikasi',
+  '/app',
+  '/app/surah',
+  '/app/juz',
+  '/app/halaman',
+  '/app/manzil',
+  '/app/ruku',
+  '/app/sajda',
+  '/app/tajwid',
+  '/app/cari',
+  '/app/bacaanku',
+  '/app/favorit',
+  '/app/koleksi',
+  '/app/catatan',
+  '/app/surah-pilihan',
+  '/app/progres',
+  '/app/hafalan',
+  '/app/sambung-ayat',
+  '/app/khataman',
+  '/app/khataman/grup',
+  '/app/sholat',
+  '/app/kiblat',
+  '/app/tasbih',
+  '/app/asmaul-husna',
+  '/app/notifikasi',
+  '/app/pengaturan',
+  '/app/baca/1',
+  '/app/halaman/1',
+];
+
+const INSTALL_CORE_URLS = [
   '/',
   '/app',
+  '/app/surah',
+  '/app/baca/1',
+  '/app/halaman/1',
   '/favicon.svg',
   '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/fonts/lpmq.woff2',
+  '/fonts/amiri-quran.woff2',
 ];
+
+let warmingPromise = null;
+let lastStatus = {
+  running: false,
+  phase: 'idle',
+  done: 0,
+  total: 0,
+  surahsCached: 0,
+  pagesCached: 0,
+  ready: false,
+};
+
+async function fetchClean(url) {
+  try {
+    const res = await fetch(url, { redirect: 'follow' });
+    if (!res || !res.ok) return null;
+    if (res.redirected) {
+      const buf = await res.arrayBuffer();
+      const headers = new Headers(res.headers);
+      headers.delete('content-encoding');
+      return new Response(buf, { status: 200, statusText: 'OK', headers });
+    }
+    return res;
+  } catch {
+    return null;
+  }
+}
+
+async function cachePutIfMissing(cache, url) {
+  const existing = await cache.match(url, { ignoreSearch: true });
+  if (existing) return true;
+  const res = await fetchClean(url);
+  if (!res) return false;
+  await cache.put(url, res);
+  return true;
+}
+
+async function cacheBatch(cache, urls, concurrency, onStep) {
+  let idx = 0;
+  async function worker() {
+    while (idx < urls.length) {
+      const current = urls[idx++];
+      await cachePutIfMissing(cache, current).catch(() => false);
+      if (onStep) onStep();
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, urls.length) }, () => worker());
+  await Promise.all(workers);
+}
+
+async function broadcastStatus(status) {
+  lastStatus = status;
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of clients) {
+    client.postMessage({ type: 'TQ_OFFLINE_STATUS', ...status });
+  }
+}
+
+async function loadManifest() {
+  try {
+    const res = await fetch('/sw-manifest.json', { cache: 'no-cache' });
+    if (res.ok) return await res.json();
+  } catch {
+    // Fallback when running under `astro dev`
+  }
+  const surahRange = Array.from({ length: 114 }, (_, i) => i + 1);
+  return {
+    shellPages: FALLBACK_SHELL_PAGES,
+    assets: [
+      '/favicon.svg',
+      '/manifest.webmanifest',
+      '/icons/icon-192.png',
+      '/icons/icon-512.png',
+      '/fonts/lpmq.woff2',
+      '/fonts/amiri-quran.woff2',
+    ],
+    quranCore: ['/quran/v1/meta.json', ...surahRange.map((id) => `/quran/v1/surah/${id}.json`)],
+    quranExtra: [
+      '/quran/v1/search/id.json',
+      '/quran/v1/search/en.json',
+      '/quran/v1/search/ar.json',
+      '/quran/v1/search/tr.json',
+      ...surahRange.map((id) => `/quran/v1/tajwid/${id}.json`),
+    ],
+  };
+}
+
+async function countCachedItems() {
+  const [shellCache, quranCache] = await Promise.all([
+    caches.open(SHELL_CACHE),
+    caches.open(QURAN_CACHE),
+  ]);
+  const [shellKeys, quranKeys] = await Promise.all([shellCache.keys(), quranCache.keys()]);
+  let surahsCached = 0;
+  for (const req of quranKeys) {
+    const p = new URL(req.url).pathname;
+    if (/^\/quran\/v1\/surah\/\d+\.json$/.test(p)) surahsCached++;
+  }
+  let pagesCached = 0;
+  for (const req of shellKeys) {
+    const p = new URL(req.url).pathname;
+    if (!/\.[a-z0-9]+$/i.test(p)) pagesCached++;
+  }
+  return { surahsCached, pagesCached };
+}
+
+function warmOfflineCache(options = {}) {
+  if (warmingPromise) return warmingPromise;
+
+  warmingPromise = (async () => {
+    try {
+      const manifest = await loadManifest();
+      const saveData = Boolean(self.navigator?.connection?.saveData) && !options.forceExtra;
+
+      const shellUrls = [...new Set([...(manifest.shellPages || []), ...(manifest.assets || [])])];
+      const coreQuran = manifest.quranCore || [];
+      const extraQuran = saveData ? [] : manifest.quranExtra || [];
+      const total = shellUrls.length + coreQuran.length + extraQuran.length;
+      let done = 0;
+      let lastEmit = 0;
+
+      const emit = async (phase, force = false) => {
+        const now = Date.now();
+        if (!force && now - lastEmit < 400) return;
+        lastEmit = now;
+        const counts = await countCachedItems();
+        await broadcastStatus({
+          running: true,
+          phase,
+          done,
+          total,
+          surahsCached: counts.surahsCached,
+          pagesCached: counts.pagesCached,
+          ready: counts.surahsCached >= 114,
+        });
+      };
+
+      const [shellCache, quranCache] = await Promise.all([
+        caches.open(SHELL_CACHE),
+        caches.open(QURAN_CACHE),
+      ]);
+
+      await emit('shell', true);
+      await cacheBatch(shellCache, shellUrls, 6, () => {
+        done++;
+        emit('shell');
+      });
+
+      await emit('surah', true);
+      await cacheBatch(quranCache, coreQuran, 6, () => {
+        done++;
+        emit('surah');
+      });
+
+      if (extraQuran.length) {
+        await emit('extra', true);
+        await cacheBatch(quranCache, extraQuran, 6, () => {
+          done++;
+          emit('extra');
+        });
+      }
+
+      const finalCounts = await countCachedItems();
+      await broadcastStatus({
+        running: false,
+        phase: 'done',
+        done: total,
+        total,
+        surahsCached: finalCounts.surahsCached,
+        pagesCached: finalCounts.pagesCached,
+        ready: finalCounts.surahsCached >= 114,
+      });
+    } catch {
+      const counts = await countCachedItems().catch(() => ({ surahsCached: 0, pagesCached: 0 }));
+      await broadcastStatus({
+        running: false,
+        phase: 'error',
+        done: 0,
+        total: 0,
+        surahsCached: counts.surahsCached,
+        pagesCached: counts.pagesCached,
+        ready: counts.surahsCached >= 114,
+      });
+    } finally {
+      warmingPromise = null;
+    }
+  })();
+
+  return warmingPromise;
+}
+
+function isHtmlPageRequest(request, url) {
+  if (url.origin !== self.location.origin) return false;
+  if (request.mode === 'navigate') return true;
+  const accept = request.headers.get('accept') || '';
+  if (accept.includes('text/html')) return true;
+  const p = url.pathname;
+  if (
+    p === '/' ||
+    p.startsWith('/app') ||
+    p.startsWith('/auth') ||
+    p === '/panduan' ||
+    p === '/tentang' ||
+    p === '/privacy-policy'
+  ) {
+    return !/\.[a-z0-9]+$/i.test(p);
+  }
+  return false;
+}
+
+async function matchRoute(cache, pathname) {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  const candidates = clean === '/' ? ['/'] : [pathname, clean, `${clean}/`];
+  for (const c of candidates) {
+    const hit = await cache.match(c, { ignoreSearch: true });
+    if (hit) return hit;
+  }
+  return null;
+}
+
+async function matchDynamicTemplate(cache, pathname) {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+
+  // Offline support for ANY Surah /app/baca/1..114 from cached /app/baca/1 template
+  const surahMatch = clean.match(/^\/app\/baca\/(\d+)$/);
+  if (surahMatch) {
+    const id = Number(surahMatch[1]);
+    if (id >= 1 && id <= 114) {
+      const tpl = await matchRoute(cache, '/app/baca/1');
+      if (tpl) {
+        const html = (await tpl.text())
+          .replace(/(&quot;surahId&quot;:\[0,)\d+(\])/g, (_, pre, post) => pre + id + post)
+          .replace(/Baca Surah ke-\d+/g, `Baca Surah ke-${id}`);
+        return new Response(html, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        });
+      }
+    }
+  }
+
+  // Offline support for ANY Mushaf Page /app/halaman/1..604 from cached /app/halaman/1 template
+  const pageMatch = clean.match(/^\/app\/halaman\/(\d+)$/);
+  if (pageMatch) {
+    const page = Number(pageMatch[1]);
+    if (page >= 1 && page <= 604) {
+      const tpl = await matchRoute(cache, '/app/halaman/1');
+      if (tpl) {
+        const html = (await tpl.text())
+          .replace(/(&quot;pageNumber&quot;:\[0,)\d+(\])/g, (_, pre, post) => pre + page + post)
+          .replace(/Halaman \d+ Mushaf/g, `Halaman ${page} Mushaf`);
+        return new Response(html, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        });
+      }
+    }
+  }
+
+  return null;
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) => cache.addAll(PRECACHE_URLS).catch(() => {}))
+    (async () => {
+      const [shellCache, quranCache] = await Promise.all([
+        caches.open(SHELL_CACHE),
+        caches.open(QURAN_CACHE),
+      ]);
+      await Promise.all([
+        cacheBatch(shellCache, INSTALL_CORE_URLS, 4),
+        cachePutIfMissing(quranCache, '/quran/v1/meta.json'),
+      ]);
+    })()
   );
 });
 
@@ -25,11 +336,33 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)))
-      )
+      .then((keys) => Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(() => {
+        // Trigger automatic full-app & 114-surah offline precaching quietly in background
+        warmOfflineCache();
+      })
   );
+});
+
+self.addEventListener('message', (event) => {
+  const msg = event.data;
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'TQ_WARM_OFFLINE') {
+    event.waitUntil(warmOfflineCache({ forceExtra: Boolean(msg.forceExtra) }));
+  } else if (msg.type === 'TQ_GET_OFFLINE_STATUS') {
+    event.waitUntil(
+      countCachedItems().then((counts) => {
+        const payload = {
+          ...lastStatus,
+          surahsCached: counts.surahsCached,
+          pagesCached: counts.pagesCached,
+          ready: counts.surahsCached >= 114,
+        };
+        event.source?.postMessage?.({ type: 'TQ_OFFLINE_STATUS', ...payload });
+      })
+    );
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -37,11 +370,11 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
 
-  // Quran JSON data: cache-first from offline cache, fallback network
+  // 1. Quran JSON data (114 surahs, meta, search, tajwid, tafsir): cache-first
   if (url.origin === self.location.origin && url.pathname.startsWith('/quran/v1/')) {
     event.respondWith(
       caches.open(QURAN_CACHE).then(async (cache) => {
-        const hit = await cache.match(request);
+        const hit = await cache.match(request, { ignoreSearch: true });
         if (hit) return hit;
         const res = await fetch(request);
         if (res.ok) cache.put(request, res.clone());
@@ -51,7 +384,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Audio CDN: check offline audio cache first
+  // 2. Audio CDN: check offline audio cache first
   if (url.hostname === 'cdn.islamic.network' || url.hostname === 'cdn.alquran.cloud') {
     event.respondWith(
       caches.open(AUDIO_CACHE).then(async (cache) => {
@@ -62,7 +395,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin static assets (JS/CSS bundles, fonts, icons): cache-first
+  // 3. Same-origin static assets (JS/CSS bundles, fonts, icons): cache-first
   if (
     url.origin === self.location.origin &&
     (url.pathname.startsWith('/_astro/') ||
@@ -83,29 +416,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Same-origin page navigations: network-first with offline cache fallback
-  if (url.origin === self.location.origin && request.mode === 'navigate') {
+  // 4. Same-origin HTML pages (both browser navigation AND Astro ClientRouter fetchHTML)
+  if (isHtmlPageRequest(request, url)) {
     event.respondWith(
-      fetch(request)
-        .then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(SHELL_CACHE).then((c) => c.put(request, copy)).catch(() => {});
+      (async () => {
+        const cache = await caches.open(SHELL_CACHE);
+        try {
+          const networkRes = await fetch(request);
+          if (networkRes && networkRes.ok) {
+            const clean = url.pathname.replace(/\/+$/, '') || '/';
+            // Don't bloat cache with 718 individual surah/page HTMLs; template fallback handles them
+            const isDynamicSurah = /^\/app\/baca\/(\d+)$/.test(clean) && clean !== '/app/baca/1';
+            const isDynamicPage = /^\/app\/halaman\/(\d+)$/.test(clean) && clean !== '/app/halaman/1';
+            if (!isDynamicSurah && !isDynamicPage) {
+              const copy = networkRes.clone();
+              cache.put(clean, copy).catch(() => {});
+            }
+            return networkRes;
           }
-          return res;
-        })
-        .catch(async () => {
-          const cache = await caches.open(SHELL_CACHE);
-          return (
-            (await cache.match(request)) ||
-            (await cache.match('/app')) ||
-            (await cache.match('/')) ||
-            new Response('Offline — buka kembali saat terhubung internet.', {
-              status: 503,
-              headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-            })
-          );
-        })
+          return networkRes;
+        } catch {
+          // Offline: check exact/normalized cached route -> dynamic surah/page template -> /app -> /
+          const exact = await matchRoute(cache, url.pathname);
+          if (exact) return exact;
+
+          const dynamicTpl = await matchDynamicTemplate(cache, url.pathname);
+          if (dynamicTpl) return dynamicTpl;
+
+          const fallback = (await matchRoute(cache, '/app')) || (await matchRoute(cache, '/'));
+          if (fallback) return fallback;
+
+          return new Response('Offline — buka kembali saat terhubung internet.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          });
+        }
+      })()
     );
   }
 });

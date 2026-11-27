@@ -9,6 +9,7 @@ import { bindTasbihSync } from './tasbih';
 import { reminderSettings } from './reminders';
 import { onAyahAudioCompleted } from './audio-player';
 import { initPwaListener } from './pwa';
+import { initOfflineSync } from './offline';
 
 let started = false;
 let unsubKhataman: (() => void) | null = null;
@@ -21,9 +22,14 @@ export function bootstrapAppStores(): void {
   initAuthListener();
   initPwaListener();
 
-  // Register Service Worker quietly
+  // Register Service Worker quietly & start automatic full-app offline sync
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(() => initOfflineSync())
+      .catch(() => {});
+  } else {
+    initOfflineSync();
   }
 
   // Record ayahs read when audio finishes an ayah

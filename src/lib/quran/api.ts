@@ -104,7 +104,9 @@ async function fetchCachedJson<T>(url: string): Promise<T> {
   const promise = (async () => {
     if (typeof caches !== 'undefined') {
       try {
-        const hit = await caches.match(url, { cacheName: QURAN_OFFLINE_CACHE });
+        const hit =
+          (await caches.match(url, { cacheName: QURAN_OFFLINE_CACHE, ignoreSearch: true })) ||
+          (await caches.match(url, { ignoreSearch: true }));
         if (hit) return (await hit.json()) as T;
       } catch {
         // Ignore cache lookup failure
@@ -112,6 +114,12 @@ async function fetchCachedJson<T>(url: string): Promise<T> {
     }
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
+    if (typeof caches !== 'undefined') {
+      caches
+        .open(QURAN_OFFLINE_CACHE)
+        .then((c) => c.put(url, res.clone()))
+        .catch(() => {});
+    }
     return (await res.json()) as T;
   })();
 

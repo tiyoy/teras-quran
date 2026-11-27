@@ -32,7 +32,15 @@ import { Badge, Button, Card } from '@/components/ui/Primitives';
 import { AyahCard } from './AyahCard';
 import { ReaderSettingsSheet } from './ReaderSettingsSheet';
 
-export function SurahReaderView({ surahId }: { surahId: number }) {
+function parseSurahIdFromUrl(fallback: number): number {
+  if (typeof window === 'undefined') return fallback;
+  const m = window.location.pathname.match(/^\/app\/baca\/(\d+)\/?$/);
+  const n = m ? Number(m[1]) : 0;
+  return n >= 1 && n <= 114 ? n : fallback;
+}
+
+export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }) {
+  const [surahId, setSurahId] = useState<number>(() => parseSurahIdFromUrl(initialSurahId));
   const [surah, setSurah] = useState<SurahMeta | null>(null);
   const [prevSurah, setPrevSurah] = useState<SurahMeta | null>(null);
   const [nextSurah, setNextSurah] = useState<SurahMeta | null>(null);
@@ -43,6 +51,17 @@ export function SurahReaderView({ surahId }: { surahId: number }) {
   const [targetAyah, setTargetAyah] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(40);
   const lastScrolledAyahId = useRef<number | null>(null);
+
+  useEffect(() => {
+    const syncId = () => setSurahId(parseSurahIdFromUrl(initialSurahId));
+    syncId();
+    document.addEventListener('astro:after-swap', syncId);
+    document.addEventListener('astro:page-load', syncId);
+    return () => {
+      document.removeEventListener('astro:after-swap', syncId);
+      document.removeEventListener('astro:page-load', syncId);
+    };
+  }, [initialSurahId]);
 
   const settings = readerSettings.value;
   const saved = isSurahSaved(surahId);
@@ -65,7 +84,9 @@ export function SurahReaderView({ surahId }: { surahId: number }) {
       .then(([meta, list]) => {
         if (!alive) return;
         const idx = meta.surahs.findIndex((s) => s.id === surahId);
-        setSurah(meta.surahs[idx] ?? null);
+        const found = meta.surahs[idx] ?? null;
+        setSurah(found);
+        if (found) document.title = `${found.name} · Al-Qur'an Digital — Teras Qur'an`;
         setPrevSurah(idx > 0 ? meta.surahs[idx - 1] : null);
         setNextSurah(idx >= 0 && idx < meta.surahs.length - 1 ? meta.surahs[idx + 1] : null);
         setAyahs(list);

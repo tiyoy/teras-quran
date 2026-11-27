@@ -78,7 +78,17 @@ const {
       });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js').catch(function () {});
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then(function () {
+              return navigator.serviceWorker.ready;
+            })
+            .then(function (reg) {
+              if (navigator.onLine && reg && reg.active) {
+                reg.active.postMessage({ type: 'TQ_WARM_OFFLINE' });
+              }
+            })
+            .catch(function () {});
         });
       }
     }

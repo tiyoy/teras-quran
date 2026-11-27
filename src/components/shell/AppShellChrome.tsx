@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { Bell, Feather, LogIn, Menu, Search, X } from 'lucide-preact';
+import { ArrowLeft, Bell, Feather, LogIn, Menu, Search, X } from 'lucide-preact';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { ToastContainer } from '@/components/ui/Primitives';
 import { ThemeToggle } from './ThemeToggle';
@@ -167,12 +167,12 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
       )}
 
       {/* Topbar */}
-      <header class="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-[var(--border)] bg-[var(--background)] px-4 lg:pl-[17rem] lg:pr-6">
+      <header class="sticky top-0 z-20 flex h-14 items-center gap-1.5 border-b border-[var(--border)] bg-[var(--background)] px-2.5 sm:gap-2 sm:px-4 lg:pl-[17rem] lg:pr-6">
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label="Buka menu navigasi"
-          class="inline-flex size-9 items-center justify-center rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] lg:hidden cursor-pointer"
+          class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] sm:size-9 lg:hidden cursor-pointer"
         >
           <Menu class="size-5" />
         </button>
@@ -180,22 +180,35 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
         <button
           type="button"
           onClick={() => setCommandOpen(true)}
-          class="flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--muted-foreground)] hover:border-[var(--primary)]/40 transition-colors cursor-pointer"
+          class="flex h-9 min-w-0 flex-1 max-w-[10.5rem] items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2.5 text-xs text-[var(--muted-foreground)] hover:border-[var(--primary)]/40 transition-colors sm:max-w-xs sm:gap-2 sm:px-3 sm:text-sm md:max-w-md cursor-pointer"
         >
           <Search class="size-4 shrink-0" />
-          <span class="flex-1 truncate text-left">Cari menu atau surah…</span>
-          <kbd class="hidden rounded border border-[var(--border)] bg-[var(--muted)] px-1.5 py-0.5 text-[11px] font-medium sm:inline-block">
+          <span class="flex-1 truncate text-left sm:hidden">Cari…</span>
+          <span class="hidden flex-1 truncate text-left sm:inline">Cari menu atau surah…</span>
+          <kbd class="hidden rounded border border-[var(--border)] bg-[var(--muted)] px-1.5 py-0.5 text-[11px] font-medium md:inline-block">
             ⌘K
           </kbd>
         </button>
 
-        <div class="ml-auto flex items-center gap-1">
+        <div class="ml-auto flex shrink-0 items-center gap-1">
+          <a
+            href="/"
+            data-astro-reload
+            title="Kembali ke halaman awal"
+            aria-label="Kembali ke halaman awal"
+            class="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 text-xs font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors sm:h-9 sm:gap-1.5 sm:px-2.5 no-underline"
+          >
+            <ArrowLeft class="size-3.5 shrink-0 text-[var(--primary)]" />
+            <span class="sm:hidden">Awal</span>
+            <span class="hidden sm:inline">Halaman awal</span>
+          </a>
+
           <ThemeToggle />
 
           <a
             href="/app/notifikasi"
             aria-label={unread > 0 ? `Notifikasi, ${unread} belum dibaca` : 'Notifikasi'}
-            class="relative inline-flex size-9 items-center justify-center rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+            class="relative inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors sm:size-9"
           >
             <Bell class="size-[18px]" />
             {unread > 0 && (
@@ -207,14 +220,15 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
             <a
               href="/app/pengaturan"
               aria-label="Pengaturan akun"
-              class="ml-1 inline-flex size-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--secondary)] text-xs font-semibold text-[var(--secondary-foreground)] hover:border-[var(--primary)] no-underline"
+              class="ml-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--secondary)] text-xs font-semibold text-[var(--secondary-foreground)] hover:border-[var(--primary)] sm:ml-1 no-underline"
             >
               {userInitials.value}
             </a>
           ) : (
             <a
               href="/auth/login"
-              class="ml-1 inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-3 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] no-underline"
+              aria-label="Masuk"
+              class="ml-0.5 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] sm:ml-1 sm:px-3 no-underline"
             >
               <LogIn class="size-3.5 text-[var(--primary)]" />
               <span class="hidden sm:inline">Masuk</span>

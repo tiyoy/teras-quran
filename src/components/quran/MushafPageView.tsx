@@ -35,7 +35,15 @@ function toArabicNumeral(n: number): string {
     .join('');
 }
 
-export function MushafPageView({ pageNumber }: { pageNumber: number }) {
+function parsePageFromUrl(fallback: number): number {
+  if (typeof window === 'undefined') return fallback;
+  const m = window.location.pathname.match(/^\/app\/halaman\/(\d+)\/?$/);
+  const n = m ? Number(m[1]) : 0;
+  return n >= 1 && n <= 604 ? n : fallback;
+}
+
+export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number }) {
+  const [pageNumber, setPageNumber] = useState<number>(() => parsePageFromUrl(initialPage));
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
   const [surahMap, setSurahMap] = useState<Map<number, SurahMeta>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -44,6 +52,17 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
   const [jumpInput, setJumpInput] = useState(String(pageNumber));
   const lastScrolledAyahId = useRef<number | null>(null);
 
+  useEffect(() => {
+    const syncPage = () => setPageNumber(parsePageFromUrl(initialPage));
+    syncPage();
+    document.addEventListener('astro:after-swap', syncPage);
+    document.addEventListener('astro:page-load', syncPage);
+    return () => {
+      document.removeEventListener('astro:after-swap', syncPage);
+      document.removeEventListener('astro:page-load', syncPage);
+    };
+  }, [initialPage]);
+
   const settings = readerSettings.value;
   const cappedSize = Math.min(settings.arabicSize, 36);
   const activeAyah = currentAyah.value;
@@ -51,6 +70,7 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
 
   useEffect(() => {
     setJumpInput(String(pageNumber));
+    document.title = `Halaman ${pageNumber} · Al-Qur'an Digital — Teras Qur'an`;
     let alive = true;
     setLoading(true);
     Promise.all([fetchQuranMeta(), fetchMushafPageAyahs(pageNumber)])

@@ -44,12 +44,15 @@ import {
   updateAudioPrefs,
 } from '@/stores/audio-player';
 import {
+  autoOfflineStatus,
   cancelOfflineQuran,
   estimateFreeSpaceMB,
+  inspectOfflineStatus,
   offlineJob,
   offlineQuranMeta,
   removeOfflineQuran,
   saveOfflineQuran,
+  triggerAutoOfflineWarm,
 } from '@/stores/offline';
 import {
   disableDailyReminder,
@@ -790,9 +793,9 @@ export function SettingsView() {
           {/* Al-Qur'an Offline */}
           <Card class="space-y-3 p-5">
             <div>
-              <h2 class="text-base font-semibold">Al-Qur&apos;an offline</h2>
+              <h2 class="text-base font-semibold">Al-Qur&apos;an offline (PWA otomatis)</h2>
               <p class="text-xs text-[var(--muted-foreground)]">
-                Simpan teks 114 surah di perangkat ini agar bisa dibaca tanpa internet.
+                Semua menu, halaman, dan 114 surah otomatis disimpan di latar belakang agar tetap bisa dibuka saat tidak ada internet.
               </p>
             </div>
 
@@ -809,31 +812,86 @@ export function SettingsView() {
                   />
                 </div>
               </div>
-            ) : offMeta ? (
-              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--accent)]/40 p-3.5 text-xs">
-                <span class="flex items-center gap-2 font-medium text-[var(--foreground)]">
-                  <CheckCircle2 class="size-4 text-[var(--primary)]" />
-                  Tersimpan untuk dibaca offline ({offMeta.filesCount} berkas)
-                </span>
-                <Button size="sm" variant="outline" onClick={removeOfflineQuran}>
-                  Hapus
-                </Button>
+            ) : autoOfflineStatus.value.running ? (
+              <div class="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-3.5">
+                <div class="flex items-center justify-between text-xs tabular-nums">
+                  <span class="font-medium text-[var(--foreground)]">
+                    Menyiapkan mode offline otomatis… ({autoOfflineStatus.value.surahsCached}/114 surah)
+                  </span>
+                  <span class="text-[var(--muted-foreground)]">
+                    {autoOfflineStatus.value.total > 0
+                      ? `${Math.round((autoOfflineStatus.value.done / autoOfflineStatus.value.total) * 100)}%`
+                      : ''}
+                  </span>
+                </div>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--muted)]">
+                  <div
+                    class="h-full bg-[var(--primary)] transition-all"
+                    style={{
+                      width: `${
+                        autoOfflineStatus.value.total > 0
+                          ? Math.min(100, (autoOfflineStatus.value.done / autoOfflineStatus.value.total) * 100)
+                          : 20
+                      }%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : autoOfflineStatus.value.ready || offMeta ? (
+              <div class="space-y-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--accent)]/40 p-3.5 text-xs">
+                  <span class="flex items-center gap-2 font-medium text-[var(--foreground)]">
+                    <CheckCircle2 class="size-4 shrink-0 text-[var(--primary)]" />
+                    <span>
+                      Siap offline otomatis · {Math.max(autoOfflineStatus.value.surahsCached, 114)}/114 surah &amp; semua halaman
+                      {autoOfflineStatus.value.tafsirCached >= 114 ? ' + tafsir lengkap' : ''}
+                    </span>
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        triggerAutoOfflineWarm(true);
+                        inspectOfflineStatus();
+                      }}
+                    >
+                      Perbarui
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={removeOfflineQuran}>
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+                {autoOfflineStatus.value.tafsirCached < 114 && (
+                  <button
+                    type="button"
+                    onClick={() => saveOfflineQuran(true)}
+                    class="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-xs font-medium hover:border-[var(--primary)] cursor-pointer"
+                  >
+                    <span class="flex items-center gap-2">
+                      <Download class="size-3.5 text-[var(--primary)]" />
+                      Simpan juga Tafsir Kemenag RI (114 surah)
+                    </span>
+                    <span class="text-[var(--muted-foreground)]">~11 MB</span>
+                  </button>
+                )}
               </div>
             ) : (
               <button
                 type="button"
-                onClick={saveOfflineQuran}
+                onClick={() => saveOfflineQuran(false)}
                 class="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-medium hover:border-[var(--primary)] cursor-pointer"
               >
                 <span class="flex items-center gap-2">
                   <Download class="size-4 text-[var(--primary)]" />
-                  Simpan Al-Qur&apos;an
+                  Simpan Al-Qur&apos;an sekarang ({autoOfflineStatus.value.surahsCached}/114 surah)
                 </span>
-                <span class="text-xs text-[var(--muted-foreground)]">Unduhan sekitar 3–5 MB</span>
+                <span class="text-xs text-[var(--muted-foreground)]">Otomatis / manual</span>
               </button>
             )}
             <p class="text-xs text-[var(--muted-foreground)]">
-              Berisi teks Arab, latin, terjemahan, warna tajwid, dan indeks pencarian. Audio dapat diunduh terpisah per surah di pemutar.
+              Mencakup seluruh menu aplikasi, teks 114 surah (604 halaman), terjemahan ID/EN, warna tajwid, dan indeks pencarian. Audio murottal dapat diunduh terpisah per surah di pemutar.
             </p>
           </Card>
 
