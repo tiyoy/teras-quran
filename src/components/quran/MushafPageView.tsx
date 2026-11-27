@@ -47,6 +47,8 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
   const [surahMap, setSurahMap] = useState<Map<number, SurahMeta>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   const [selectedAyah, setSelectedAyah] = useState<Ayah | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [jumpInput, setJumpInput] = useState(String(pageNumber));
@@ -73,6 +75,7 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
     document.title = `Halaman ${pageNumber} · Al-Qur'an Digital — Teras Qur'an`;
     let alive = true;
     setLoading(true);
+    setLoadError(false);
     Promise.all([fetchQuranMeta(), fetchMushafPageAyahs(pageNumber)])
       .then(([meta, list]) => {
         if (!alive) return;
@@ -86,12 +89,15 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
         }
       })
       .catch(() => {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoadError(true);
+          setLoading(false);
+        }
       });
     return () => {
       alive = false;
     };
-  }, [pageNumber]);
+  }, [pageNumber, reloadTick]);
 
   useEffect(() => {
     if (!activeAyah) {
@@ -155,6 +161,21 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
 
       {loading ? (
         <div class="h-96 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--card)]" />
+      ) : loadError ? (
+        <Card class="p-8 text-center">
+          <p class="font-semibold">Halaman {pageNumber} belum tersimpan di perangkat</p>
+          <p class="mx-auto mt-1 max-w-sm text-xs text-[var(--muted-foreground)]">
+            Perangkat sedang offline dan data surah untuk halaman ini belum selesai disimpan otomatis.
+          </p>
+          <div class="mt-4 flex justify-center gap-2">
+            <Button size="sm" onClick={() => setReloadTick((t) => t + 1)}>
+              Coba lagi
+            </Button>
+            <Button size="sm" variant="outline" href="/app/halaman">
+              Indeks halaman
+            </Button>
+          </div>
+        </Card>
       ) : (
         <Card class="p-5 sm:p-8">
           <div class="space-y-6">

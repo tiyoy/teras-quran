@@ -15,7 +15,7 @@ import {
   type SearchIndex,
   type SearchLang,
 } from '@/lib/quran/search-logic';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui/Primitives';
+import { Badge, Button, Card, EmptyState, PageHeader } from '@/components/ui/Primitives';
 
 const LANG_OPTIONS: Array<{ id: SearchLang; label: string }> = [
   { id: 'id', label: 'Indonesia' },
@@ -30,6 +30,8 @@ export function SearchView() {
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [indexCache, setIndexCache] = useState<Partial<Record<SearchLang, SearchIndex>>>({});
   const [loadingIdx, setLoadingIdx] = useState(false);
+  const [indexError, setIndexError] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('q');
@@ -41,14 +43,21 @@ export function SearchView() {
   }, []);
 
   useEffect(() => {
-    if (indexCache[lang]) return;
+    if (indexCache[lang]) {
+      setIndexError(false);
+      return;
+    }
     let alive = true;
     setLoadingIdx(true);
+    setIndexError(false);
     fetchSearchRows(lang)
       .then((rows) => {
         if (!alive) return;
         const built = buildSearchIndex(lang, rows);
         setIndexCache((prev) => ({ ...prev, [lang]: built }));
+      })
+      .catch(() => {
+        if (alive) setIndexError(true);
       })
       .finally(() => {
         if (alive) setLoadingIdx(false);
@@ -56,7 +65,7 @@ export function SearchView() {
     return () => {
       alive = false;
     };
-  }, [lang, indexCache]);
+  }, [lang, indexCache, retryTick]);
 
   const surahMap = useMemo(() => new Map(surahs.map((s) => [s.id, s])), [surahs]);
   const directRef = useMemo(
@@ -163,6 +172,17 @@ export function SearchView() {
         <Card class="p-8 text-center text-sm text-[var(--muted-foreground)]">
           Memuat indeks pencarian…
         </Card>
+      ) : indexError ? (
+        <EmptyState
+          icon={<SearchX class="size-5" />}
+          title="Indeks pencarian belum tersedia offline"
+          description="Kamu tetap bisa langsung melompat ke ayat (mis. ketik 2:255 atau yasin 1). Sambungkan internet sekali untuk melengkapi indeks pencarian bahasa ini."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setRetryTick((t) => t + 1)}>
+              Coba lagi
+            </Button>
+          }
+        />
       ) : result.hits.length === 0 ? (
         <EmptyState
           icon={<SearchX class="size-5" />}

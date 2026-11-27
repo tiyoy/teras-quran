@@ -33,7 +33,10 @@ export function TafsirView() {
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    Promise.all([fetchSurahAyahs(surahId), fetchSurahTafsir(surahId)])
+    Promise.all([
+      fetchSurahAyahs(surahId).catch(() => [] as Ayah[]),
+      fetchSurahTafsir(surahId).catch(() => [] as TafsirItem[]),
+    ])
       .then(([ayahList, tafsirList]) => {
         if (!alive) return;
         const clamped = Math.min(ayahNum, ayahList.length || 1);
@@ -169,7 +172,9 @@ export function TafsirView() {
                 {tab === 'short' ? tafsir.short : tafsir.long}
               </div>
             ) : (
-              <p class="text-sm text-[var(--muted-foreground)]">Tafsir belum tersedia untuk ayat ini.</p>
+              <p class="text-sm text-[var(--muted-foreground)]">
+                Tafsir surah ini belum tersedia di perangkat. Sambungkan ke internet sebentar agar tafsir otomatis tersimpan offline.
+              </p>
             )}
           </Card>
 

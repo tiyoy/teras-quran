@@ -59,7 +59,15 @@ export function initAuthListener(): void {
     return;
   }
 
+  // Offline-first safety timeout: never leave auth gates stuck loading if Firebase SDK stalls offline
+  const fallbackTimer = setTimeout(() => {
+    if (!authReady.value) {
+      authReady.value = true;
+    }
+  }, 2500);
+
   subscribeAuth((user) => {
+    clearTimeout(fallbackTimer);
     authUser.value = user;
     authReady.value = true;
     unsubProfile?.();

@@ -168,7 +168,13 @@ function handleAudioError() {
   }
   isBuffering.value = false;
   isPlaying.value = false;
-  showToast('Audio ayat ini tidak dapat diputar.', { variant: 'error' });
+  const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+  showToast(
+    offline
+      ? 'Sedang offline. Audio surah ini belum diunduh — teks Al-Qur\'an tetap dapat dibaca offline.'
+      : 'Audio ayat ini tidak dapat diputar.',
+    { variant: 'error' }
+  );
 }
 
 function computeGapMs(): number {

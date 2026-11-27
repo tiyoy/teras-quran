@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { ArrowLeft, Bell, Feather, LogIn, Menu, Search, X } from 'lucide-preact';
+import { ArrowLeft, Bell, Feather, LogIn, Menu, Search, WifiOff, X } from 'lucide-preact';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { ToastContainer } from '@/components/ui/Primitives';
 import { ThemeToggle } from './ThemeToggle';
@@ -17,6 +17,7 @@ import { bootstrapAppStores } from '@/stores/sync';
 import { checkAndTriggerReminder } from '@/stores/reminders';
 import { todayLog } from '@/stores/progress';
 import { dueHifzItems } from '@/stores/hifz';
+import { autoOfflineStatus, isOnline } from '@/stores/offline';
 
 export function AppShellChrome({ initialPath }: { initialPath: string }) {
   const [pathname, setPathname] = useState(initialPath);
@@ -236,6 +237,25 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
           )}
         </div>
       </header>
+
+      {/* Flat Offline-First Status Bar (shown only when browser is offline) */}
+      {mounted && !isOnline.value && (
+        <div
+          role="status"
+          aria-live="polite"
+          class="border-b border-[var(--border)] bg-[var(--secondary)] px-4 py-2 text-xs text-[var(--secondary-foreground)] lg:pl-[17rem] lg:pr-6"
+        >
+          <div class="mx-auto flex max-w-4xl items-center gap-2">
+            <WifiOff class="size-3.5 shrink-0 text-[var(--primary)]" />
+            <p class="truncate">
+              <strong class="font-semibold">Mode Offline</strong> —{' '}
+              {autoOfflineStatus.value.surahsCached >= 114
+                ? 'Seluruh 114 surah, 604 halaman & semua menu siap digunakan tanpa internet.'
+                : `${autoOfflineStatus.value.surahsCached}/114 surah dan halaman tersimpan siap dibaca tanpa internet.`}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Bottom Quick Nav */}
       <nav

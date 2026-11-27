@@ -47,6 +47,8 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
   const [ayahs, setAyahs] = useState<Ayah[]>([]);
   const [tajwidMap, setTajwidMap] = useState<Map<number, TajwidSegment[]>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [targetAyah, setTargetAyah] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(40);
@@ -80,6 +82,7 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
 
     let alive = true;
     setLoading(true);
+    setLoadError(false);
     Promise.all([fetchQuranMeta(), fetchSurahAyahs(surahId)])
       .then(([meta, list]) => {
         if (!alive) return;
@@ -107,13 +110,16 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
         }
       })
       .catch(() => {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoadError(true);
+          setLoading(false);
+        }
       });
 
     return () => {
       alive = false;
     };
-  }, [surahId]);
+  }, [surahId, reloadTick]);
 
   useEffect(() => {
     if (!settings.tajwid) return;
@@ -161,6 +167,25 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
         <div class="h-44 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--card)]" />
         <div class="h-44 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--card)]" />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card class="p-8 text-center">
+        <p class="font-semibold">Surah belum tersimpan di perangkat</p>
+        <p class="mx-auto mt-1 max-w-sm text-xs text-[var(--muted-foreground)]">
+          Perangkat sedang offline dan data surah ini belum selesai disimpan otomatis. Sambungkan ke internet sejenak lalu coba lagi.
+        </p>
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+          <Button size="sm" onClick={() => setReloadTick((t) => t + 1)}>
+            Coba lagi
+          </Button>
+          <Button href="/app/surah" size="sm" variant="outline">
+            Lihat daftar surah
+          </Button>
+        </div>
+      </Card>
     );
   }
 

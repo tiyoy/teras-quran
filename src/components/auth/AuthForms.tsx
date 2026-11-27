@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Info, Mail } from 'lucide-preact';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Info, Mail, WifiOff } from 'lucide-preact';
 import {
   isFirebaseConfigured,
   loginWithEmail,
@@ -14,6 +14,36 @@ import { authUser, initAuthListener } from '@/stores/auth';
 import { Button, Card } from '@/components/ui/Primitives';
 
 function FirebaseNotice() {
+  const [offline, setOffline] = useState(false);
+
+  useEffect(() => {
+    const update = () => setOffline(!navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
+
+  if (offline) {
+    return (
+      <div class="mb-4 flex gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-3.5 text-xs text-[var(--secondary-foreground)]">
+        <WifiOff class="mt-0.5 size-4 shrink-0 text-[var(--primary)]" />
+        <div class="space-y-1">
+          <p class="font-semibold">Sedang dalam Mode Offline</p>
+          <p class="leading-relaxed">
+            Masuk atau membuat akun membutuhkan koneksi internet. Kamu tetap bisa langsung membaca Al-Qur&apos;an, tafsir, jadwal sholat, kiblat, dan tasbih digital tanpa internet.
+          </p>
+          <a href="/app/surah" class="inline-block pt-1 font-semibold text-[var(--primary)] underline">
+            Lanjut baca Al-Qur&apos;an offline →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   if (isFirebaseConfigured) return null;
   return (
     <div class="mb-4 flex gap-2.5 rounded-xl border border-[var(--primary)]/30 bg-[var(--accent)] p-3.5 text-xs text-[var(--accent-foreground)]">

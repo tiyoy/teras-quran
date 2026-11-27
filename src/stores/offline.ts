@@ -17,11 +17,13 @@ export interface AutoOfflineStatus {
   surahsCached: number;
   pagesCached: number;
   tafsirCached: number;
+  persisted: boolean;
   ready: boolean;
 }
 
 const KEY = 'tq:offline:quran';
 
+export const isOnline = signal<boolean>(true);
 export const offlineQuranMeta = signal<OfflineQuranMeta | null>(
   readStorage<OfflineQuranMeta | null>(KEY, null)
 );
@@ -34,10 +36,26 @@ export const autoOfflineStatus = signal<AutoOfflineStatus>({
   surahsCached: 0,
   pagesCached: 0,
   tafsirCached: 0,
+  persisted: false,
   ready: false,
 });
 
 let syncBound = false;
+
+async function ensurePersistentStorage(): Promise<boolean> {
+  if (typeof navigator === 'undefined' || !navigator.storage) return false;
+  try {
+    if (navigator.storage.persisted && (await navigator.storage.persisted())) {
+      return true;
+    }
+    if (navigator.storage.persist) {
+      return await navigator.storage.persist();
+    }
+  } catch {
+    // ignore storage permission denial
+  }
+  return false;
+}
 
 export async function inspectOfflineStatus(): Promise<void> {
   if (typeof caches === 'undefined') return;
@@ -64,16 +82,22 @@ export async function inspectOfflineStatus(): Promise<void> {
       }
     }
 
+    let persisted = autoOfflineStatus.value.persisted;
+    if (typeof navigator !== 'undefined' && navigator.storage?.persisted) {
+      persisted = await navigator.storage.persisted().catch(() => persisted);
+    }
+
     const ready = surahsCached >= 114;
     autoOfflineStatus.value = {
       ...autoOfflineStatus.value,
       surahsCached,
       pagesCached,
       tafsirCached,
+      persisted,
       ready,
     };
 
-    if (ready && !offlineQuranMeta.value) {
+    if (ready && (!offlineQuranMeta.value || (tafsirCached >= 114 && !offlineQuranMeta.value.includesTafsir))) {
       const meta: OfflineQuranMeta = {
         savedAt: Date.now(),
         filesCount: qKeys.length,
@@ -99,10 +123,27 @@ export function triggerAutoOfflineWarm(forceExtra = false): void {
 
 export function initOfflineSync(): void {
   if (typeof window === 'undefined') return;
+  isOnline.value = navigator.onLine;
   inspectOfflineStatus();
 
   if (syncBound) return;
   syncBound = true;
+
+  // Ask the browser to protect offline Qur'an caches from eviction
+  ensurePersistentStorage().then((persisted) => {
+    if (persisted) {
+      autoOfflineStatus.value = { ...autoOfflineStatus.value, persisted: true };
+    }
+  });
+
+  window.addEventListener('online', () => {
+    isOnline.value = true;
+    triggerAutoOfflineWarm();
+  });
+  window.addEventListener('offline', () => {
+    isOnline.value = false;
+    inspectOfflineStatus();
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
@@ -116,6 +157,7 @@ export function initOfflineSync(): void {
         total: Number(msg.total || 0),
         surahsCached: Number(msg.surahsCached ?? autoOfflineStatus.value.surahsCached),
         pagesCached: Number(msg.pagesCached ?? autoOfflineStatus.value.pagesCached),
+        tafsirCached: Number(msg.tafsirCached ?? autoOfflineStatus.value.tafsirCached),
         ready: Boolean(msg.ready),
       };
       if (!msg.running && msg.ready) {
@@ -124,15 +166,16 @@ export function initOfflineSync(): void {
     });
 
     triggerAutoOfflineWarm();
-    window.addEventListener('online', () => triggerAutoOfflineWarm());
   }
 }
 
-export async function saveOfflineQuran(includeTafsir = false): Promise<void> {
+export async function saveOfflineQuran(includeTafsir = true): Promise<void> {
   if (typeof caches === 'undefined') {
     showToast('Browser ini tidak mendukung penyimpanan offline.', { variant: 'error' });
     return;
   }
+
+  await ensurePersistentStorage();
 
   const urls: string[] = [
     `${QURAN_BASE_PATH}/meta.json`,

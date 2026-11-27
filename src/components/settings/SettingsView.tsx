@@ -816,7 +816,15 @@ export function SettingsView() {
               <div class="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-3.5">
                 <div class="flex items-center justify-between text-xs tabular-nums">
                   <span class="font-medium text-[var(--foreground)]">
-                    Menyiapkan mode offline otomatis… ({autoOfflineStatus.value.surahsCached}/114 surah)
+                    {autoOfflineStatus.value.phase === 'shell'
+                      ? 'Menyimpan halaman & menu aplikasi…'
+                      : autoOfflineStatus.value.phase === 'surah'
+                        ? `Menyimpan surah (${autoOfflineStatus.value.surahsCached}/114)…`
+                        : autoOfflineStatus.value.phase === 'extra'
+                          ? 'Menyimpan indeks pencarian & tajwid…'
+                          : autoOfflineStatus.value.phase === 'tafsir'
+                            ? `Menyimpan Tafsir Kemenag RI (${autoOfflineStatus.value.tafsirCached}/114)…`
+                            : `Menyiapkan mode offline otomatis… (${autoOfflineStatus.value.surahsCached}/114 surah)`}
                   </span>
                   <span class="text-[var(--muted-foreground)]">
                     {autoOfflineStatus.value.total > 0
@@ -843,8 +851,13 @@ export function SettingsView() {
                   <span class="flex items-center gap-2 font-medium text-[var(--foreground)]">
                     <CheckCircle2 class="size-4 shrink-0 text-[var(--primary)]" />
                     <span>
-                      Siap offline otomatis · {Math.max(autoOfflineStatus.value.surahsCached, 114)}/114 surah &amp; semua halaman
-                      {autoOfflineStatus.value.tafsirCached >= 114 ? ' + tafsir lengkap' : ''}
+                      Offline-First siap · {Math.max(autoOfflineStatus.value.surahsCached, 114)}/114 surah, semua menu &amp; 604 halaman
+                      {autoOfflineStatus.value.tafsirCached >= 114
+                        ? ' · 114/114 tafsir'
+                        : autoOfflineStatus.value.tafsirCached > 0
+                          ? ` · ${autoOfflineStatus.value.tafsirCached}/114 tafsir`
+                          : ''}
+                      {autoOfflineStatus.value.persisted ? ' · Penyimpanan dilindungi' : ''}
                     </span>
                   </span>
                   <div class="flex items-center gap-1.5">
@@ -871,7 +884,7 @@ export function SettingsView() {
                   >
                     <span class="flex items-center gap-2">
                       <Download class="size-3.5 text-[var(--primary)]" />
-                      Simpan juga Tafsir Kemenag RI (114 surah)
+                      Lengkapi Tafsir Kemenag RI sekarang ({autoOfflineStatus.value.tafsirCached}/114 surah)
                     </span>
                     <span class="text-[var(--muted-foreground)]">~11 MB</span>
                   </button>
