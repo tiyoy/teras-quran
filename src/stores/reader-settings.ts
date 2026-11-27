@@ -4,6 +4,8 @@ import type { Ayah } from '@/lib/quran/api';
 
 export interface ReaderSettings {
   arabicSize: number;
+  latinSize: number;
+  translationSize: number;
   showTranslation: boolean;
   showTransliteration: boolean;
   translationLang: 'id' | 'en';
@@ -13,11 +15,15 @@ export interface ReaderSettings {
 }
 
 export const ARABIC_SIZE_LIMITS = { min: 22, max: 44, step: 2, default: 30 } as const;
+export const LATIN_SIZE_LIMITS = { min: 12, max: 24, step: 1, default: 14 } as const;
+export const TRANSLATION_SIZE_LIMITS = { min: 12, max: 24, step: 1, default: 15 } as const;
 
 const KEY = 'tq:reader';
 
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   arabicSize: ARABIC_SIZE_LIMITS.default,
+  latinSize: LATIN_SIZE_LIMITS.default,
+  translationSize: TRANSLATION_SIZE_LIMITS.default,
   showTranslation: true,
   showTransliteration: true,
   translationLang: 'id',

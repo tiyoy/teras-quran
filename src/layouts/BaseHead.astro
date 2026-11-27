@@ -15,8 +15,16 @@ const {
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<meta name="theme-color" content="#0F52BA" />
+<meta name="theme-color" content="#0F52BA" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0B111E" media="(prefers-color-scheme: dark)" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Teras Qur'an" />
+<meta name="application-name" content="Teras Qur'an" />
 <title>{title}</title>
 <meta name="description" content={description} />
 <meta property="og:type" content="website" />
@@ -25,18 +33,54 @@ const {
 <meta property="og:description" content={description} />
 <script is:inline>
   (function () {
-    function applySavedTheme() {
+    function applySavedTheme(root) {
       try {
+        var el = root || document.documentElement;
         var raw = localStorage.getItem('tq:theme');
         var mode = raw ? JSON.parse(raw) : 'system';
         var dark =
           mode === 'dark' ||
           (mode !== 'light' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.classList.toggle('dark', dark);
-        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        el.classList.toggle('dark', dark);
+        el.style.colorScheme = dark ? 'dark' : 'light';
       } catch (e) {}
     }
+
+    function applySplashSkip(root) {
+      try {
+        if (sessionStorage.getItem('tq:splash-seen') === '1') {
+          (root || document.documentElement).classList.add('tq-splash-skip');
+        }
+      } catch (e) {}
+    }
+
     applySavedTheme();
-    document.addEventListener('astro:after-swap', applySavedTheme);
+    applySplashSkip();
+
+    document.addEventListener('astro:before-swap', function (ev) {
+      if (ev && ev.newDocument && ev.newDocument.documentElement) {
+        applySavedTheme(ev.newDocument.documentElement);
+        ev.newDocument.documentElement.classList.add('tq-splash-skip');
+      }
+    });
+
+    document.addEventListener('astro:after-swap', function () {
+      applySavedTheme();
+      applySplashSkip();
+    });
+
+    // Capture PWA install prompt early before Preact islands hydrate
+    if (!window.__tqPwaBound) {
+      window.__tqPwaBound = true;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__tqInstallPrompt = e;
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
+    }
   })();
 </script>

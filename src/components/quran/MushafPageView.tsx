@@ -258,9 +258,17 @@ export function MushafPageView({ pageNumber }: { pageNumber: number }) {
             <p class="quran-text text-right text-2xl text-[var(--foreground)]" dir="rtl" lang="ar">
               {selectedAyah.ar}
             </p>
-            <div class="space-y-1.5 text-sm">
-              <p class="italic text-[var(--muted-foreground)]">{selectedAyah.tr}</p>
-              <p class="leading-relaxed text-[var(--foreground)]">
+            <div class="space-y-1.5">
+              <p
+                style={{ fontSize: `${settings.latinSize}px` }}
+                class="italic leading-relaxed text-[var(--muted-foreground)]"
+              >
+                {selectedAyah.tr}
+              </p>
+              <p
+                style={{ fontSize: `${settings.translationSize}px` }}
+                class="leading-relaxed text-[var(--foreground)]"
+              >
                 {getTranslationText(selectedAyah)}
               </p>
             </div>

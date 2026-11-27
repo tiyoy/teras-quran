@@ -8,6 +8,7 @@ import { bindNotificationsSync } from './notifications';
 import { bindTasbihSync } from './tasbih';
 import { reminderSettings } from './reminders';
 import { onAyahAudioCompleted } from './audio-player';
+import { initPwaListener } from './pwa';
 
 let started = false;
 let unsubKhataman: (() => void) | null = null;
@@ -18,6 +19,7 @@ export function bootstrapAppStores(): void {
   started = true;
 
   initAuthListener();
+  initPwaListener();
 
   // Register Service Worker quietly
   if ('serviceWorker' in navigator) {

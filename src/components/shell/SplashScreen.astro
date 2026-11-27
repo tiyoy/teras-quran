@@ -1,0 +1,153 @@
+---
+---
+
+<noscript>
+  <style>
+    #tq-splash {
+      display: none !important;
+    }
+  </style>
+</noscript>
+
+<div
+  id="tq-splash"
+  role="status"
+  aria-live="polite"
+  aria-label="Memuat Al-Qur'an Digital — Teras Qur'an"
+>
+  <div class="flex w-full max-w-xs flex-col items-center text-center">
+    {/* Flat Sapphire Rehal Emblem */}
+    <div class="flex size-[72px] items-center justify-center rounded-2xl bg-[var(--primary)]">
+      <svg viewBox="0 0 100 100" class="size-[72px]" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="var(--primary)"></rect>
+        <g transform="translate(50 50) scale(0.92) translate(-50 -56)">
+          <path
+            d="M18 39L50 61L82 39M50 61L31 83M50 61L69 83"
+            fill="none"
+            stroke="var(--primary-foreground)"
+            stroke-width="6.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+          <path
+            d="M47.5 50.5L22 33C22 28.5 24.5 25.5 28.5 26C36 27 42.5 30.5 47.5 35.5Z"
+            fill="var(--primary-foreground)"
+          ></path>
+          <path
+            d="M52.5 50.5L78 33C78 28.5 75.5 25.5 71.5 26C64 27 57.5 30.5 52.5 35.5Z"
+            fill="var(--primary-foreground)"
+          ></path>
+          <path
+            d="M50 53.5L52.2 55.7L55.3 55.7L55.3 58.8L57.5 61L55.3 63.2L55.3 66.3L52.2 66.3L50 68.5L47.8 66.3L44.7 66.3L44.7 63.2L42.5 61L44.7 58.8L44.7 55.7L47.8 55.7Z"
+            fill="var(--gold)"
+          ></path>
+        </g>
+      </svg>
+    </div>
+
+    <p class="quran-text mt-5 text-xl text-[var(--primary)]" dir="rtl" lang="ar">
+      بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
+    </p>
+
+    <h2 class="mt-2 text-lg font-bold tracking-tight text-[var(--foreground)]">
+      Al-Qur&apos;an Digital
+    </h2>
+    <p class="text-xs font-medium text-[var(--muted-foreground)]">Teras Qur&apos;an</p>
+
+    {/* Flat Solid Progress Bar */}
+    <div class="mt-6 h-1 w-44 overflow-hidden rounded-full bg-[var(--muted)]">
+      <div id="tq-splash-bar" class="h-full rounded-full bg-[var(--primary)]"></div>
+    </div>
+
+    <p id="tq-splash-status" class="mt-2.5 text-[11px] font-medium text-[var(--muted-foreground)]">
+      Menyiapkan mushaf…
+    </p>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var splash = document.getElementById('tq-splash');
+    if (!splash) return;
+
+    try {
+      if (sessionStorage.getItem('tq:splash-seen') === '1') {
+        splash.remove();
+        return;
+      }
+    } catch (e) {}
+
+    var bar = document.getElementById('tq-splash-bar');
+    var status = document.getElementById('tq-splash-status');
+    var isEn = false;
+    try {
+      isEn = localStorage.getItem('tq:locale') === '"en"';
+    } catch (e) {}
+    var msgLoad = isEn ? 'Loading layout & fonts…' : 'Memuat tampilan & font…';
+    var msgPrep = isEn ? 'Preparing page…' : 'Menyiapkan halaman…';
+    var msgReady = isEn ? 'Ready to read' : 'Siap dibaca';
+    if (isEn && status) status.textContent = 'Preparing mushaf…';
+
+    var dismissed = false;
+    var startedAt = Date.now();
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var minShowMs = reduced ? 120 : 520;
+
+    function setProgress(pct, label) {
+      if (bar) bar.style.width = pct + '%';
+      if (status && label) status.textContent = label;
+    }
+
+    function finish(immediate) {
+      if (dismissed) return;
+      dismissed = true;
+      try {
+        sessionStorage.setItem('tq:splash-seen', '1');
+      } catch (e) {}
+      document.documentElement.classList.add('tq-splash-skip');
+      setProgress(100, msgReady);
+
+      var hideNow = function () {
+        splash.classList.add('is-hidden');
+        setTimeout(function () {
+          if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        }, reduced ? 20 : 300);
+      };
+
+      if (immediate) {
+        hideNow();
+      } else {
+        setTimeout(hideNow, reduced ? 0 : 120);
+      }
+    }
+
+    // Tap/click anywhere to dismiss immediately if desired
+    splash.addEventListener('click', function () {
+      finish(true);
+    });
+
+    // Advance bar smoothly on parse
+    requestAnimationFrame(function () {
+      setProgress(55, msgLoad);
+    });
+
+    function onPageReady() {
+      setProgress(88, msgPrep);
+      var elapsed = Date.now() - startedAt;
+      var wait = Math.max(0, minShowMs - elapsed);
+      setTimeout(function () {
+        finish(false);
+      }, wait);
+    }
+
+    if (document.readyState === 'complete') {
+      onPageReady();
+    } else {
+      window.addEventListener('load', onPageReady, { once: true });
+      // Hard safety cap so slow external resources never block the user
+      setTimeout(function () {
+        finish(false);
+      }, 1600);
+    }
+  })();
+</script>

@@ -400,12 +400,22 @@ export function AyahCard({
 
       {/* Transliteration */}
       {settings.showTransliteration && ayah.tr && (
-        <p class="mt-3 text-sm italic leading-relaxed text-[var(--muted-foreground)]">{ayah.tr}</p>
+        <p
+          style={{ fontSize: `${settings.latinSize}px` }}
+          class="mt-3 italic leading-relaxed text-[var(--muted-foreground)]"
+        >
+          {ayah.tr}
+        </p>
       )}
 
       {/* Translation */}
       {settings.showTranslation && (
-        <p class="mt-2 text-[15px] leading-relaxed text-[var(--foreground)]">{translation}</p>
+        <p
+          style={{ fontSize: `${settings.translationSize}px` }}
+          class="mt-2 leading-relaxed text-[var(--foreground)]"
+        >
+          {translation}
+        </p>
       )}
 
       {/* Note Modal */}

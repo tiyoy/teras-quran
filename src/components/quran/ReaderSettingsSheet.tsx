@@ -1,6 +1,8 @@
 import { RotateCcw } from 'lucide-preact';
 import {
   ARABIC_SIZE_LIMITS,
+  LATIN_SIZE_LIMITS,
+  TRANSLATION_SIZE_LIMITS,
   readerSettings,
   resetReaderSettings,
   updateReaderSettings,
@@ -21,49 +23,110 @@ export function ReaderSettingsSheet({
       open={open}
       onClose={onClose}
       title="Tampilan bacaan"
-      description="Ukuran teks Arab, warna tajwid, terjemahan, transliterasi, dan mode hafalan."
+      description="Ukuran teks Arab, Latin, terjemahan, warna tajwid, dan mode hafalan."
     >
       <div class="space-y-5 text-sm">
-        {/* Arabic Size + Live Preview */}
-        <div>
-          <div class="mb-2 flex items-center justify-between">
-            <label for="reader-arabic-size" class="font-medium">
-              Ukuran teks Arab ({s.arabicSize}px)
-            </label>
-          </div>
-          <input
-            id="reader-arabic-size"
-            type="range"
-            min={ARABIC_SIZE_LIMITS.min}
-            max={ARABIC_SIZE_LIMITS.max}
-            step={ARABIC_SIZE_LIMITS.step}
-            value={s.arabicSize}
-            onInput={(e) =>
-              updateReaderSettings({ arabicSize: Number((e.target as HTMLInputElement).value) })
-            }
-            class="w-full cursor-pointer"
-          />
-          <div class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+        {/* Live Preview */}
+        <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+          <p
+            class="quran-text text-right text-[var(--foreground)]"
+            dir="rtl"
+            lang="ar"
+            style={{ fontSize: `${s.arabicSize}px` }}
+          >
+            بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
+          </p>
+          {s.showTransliteration && (
             <p
-              class="quran-text text-right text-[var(--foreground)]"
-              dir="rtl"
-              lang="ar"
-              style={{ fontSize: `${s.arabicSize}px` }}
+              style={{ fontSize: `${s.latinSize}px` }}
+              class="mt-2 italic leading-relaxed text-[var(--muted-foreground)]"
             >
-              بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
+              Bismillāhir-raḥmānir-raḥīm
             </p>
-            {s.showTransliteration && (
-              <p class="mt-2 text-xs italic text-[var(--muted-foreground)]">
-                Bismillāhir-raḥmānir-raḥīm
-              </p>
-            )}
-            {s.showTranslation && (
-              <p class="mt-1 text-xs text-[var(--foreground)]">
-                {s.translationLang === 'en'
-                  ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'
-                  : 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.'}
-              </p>
-            )}
+          )}
+          {s.showTranslation && (
+            <p
+              style={{ fontSize: `${s.translationSize}px` }}
+              class="mt-1.5 leading-relaxed text-[var(--foreground)]"
+            >
+              {s.translationLang === 'en'
+                ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'
+                : 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.'}
+            </p>
+          )}
+        </div>
+
+        {/* Font Size Sliders */}
+        <div class="space-y-3.5">
+          <div>
+            <div class="mb-1.5 flex items-center justify-between">
+              <label for="reader-arabic-size" class="font-medium">
+                Ukuran teks Arab
+              </label>
+              <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                {s.arabicSize}px
+              </span>
+            </div>
+            <input
+              id="reader-arabic-size"
+              type="range"
+              min={ARABIC_SIZE_LIMITS.min}
+              max={ARABIC_SIZE_LIMITS.max}
+              step={ARABIC_SIZE_LIMITS.step}
+              value={s.arabicSize}
+              onInput={(e) =>
+                updateReaderSettings({ arabicSize: Number((e.target as HTMLInputElement).value) })
+              }
+              class="w-full cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <div class="mb-1.5 flex items-center justify-between">
+              <label for="reader-latin-size" class="font-medium">
+                Ukuran teks Latin
+              </label>
+              <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                {s.latinSize}px
+              </span>
+            </div>
+            <input
+              id="reader-latin-size"
+              type="range"
+              min={LATIN_SIZE_LIMITS.min}
+              max={LATIN_SIZE_LIMITS.max}
+              step={LATIN_SIZE_LIMITS.step}
+              value={s.latinSize}
+              onInput={(e) =>
+                updateReaderSettings({ latinSize: Number((e.target as HTMLInputElement).value) })
+              }
+              class="w-full cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <div class="mb-1.5 flex items-center justify-between">
+              <label for="reader-translation-size" class="font-medium">
+                Ukuran teks Terjemahan
+              </label>
+              <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                {s.translationSize}px
+              </span>
+            </div>
+            <input
+              id="reader-translation-size"
+              type="range"
+              min={TRANSLATION_SIZE_LIMITS.min}
+              max={TRANSLATION_SIZE_LIMITS.max}
+              step={TRANSLATION_SIZE_LIMITS.step}
+              value={s.translationSize}
+              onInput={(e) =>
+                updateReaderSettings({
+                  translationSize: Number((e.target as HTMLInputElement).value),
+                })
+              }
+              class="w-full cursor-pointer"
+            />
           </div>
         </div>
 

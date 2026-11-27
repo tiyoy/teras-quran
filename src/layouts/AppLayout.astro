@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import BaseHead from './BaseHead.astro';
+import SplashScreen from '@/components/shell/SplashScreen.astro';
 import { AppShellChrome } from '@/components/shell/AppShellChrome';
 
 interface Props {
@@ -19,6 +20,7 @@ const currentPath = Astro.url.pathname;
     <ClientRouter />
   </head>
   <body class="min-h-dvh bg-[var(--background)] text-[var(--foreground)]">
+    <SplashScreen />
     <AppShellChrome
       client:load
       initialPath={currentPath}

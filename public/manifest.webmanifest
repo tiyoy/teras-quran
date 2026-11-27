@@ -1,18 +1,67 @@
 {
+  "id": "/",
   "name": "Al-Qur'an Digital — Teras Qur'an",
   "short_name": "Teras Qur'an",
   "description": "Baca Al-Qur'an 30 juz dengan teks Arab, latin, terjemahan, tafsir Kemenag RI, audio murottal per ayat, jadwal murajaah hafalan, jadwal sholat, kiblat, dan tasbih digital.",
   "start_url": "/app",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
   "background_color": "#F7F9FC",
   "theme_color": "#0F52BA",
   "lang": "id",
+  "categories": ["books", "education", "lifestyle"],
   "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Daftar Surah",
+      "short_name": "Surah",
+      "url": "/app/surah",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Tasbih Digital",
+      "short_name": "Tasbih",
+      "url": "/app/tasbih",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Jadwal Sholat",
+      "short_name": "Sholat",
+      "url": "/app/sholat",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Progres Bacaan",
+      "short_name": "Progres",
+      "url": "/app/progres",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

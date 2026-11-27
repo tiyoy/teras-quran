@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Save,
   Shield,
+  Smartphone,
   Sun,
   Trash2,
   User,
@@ -24,10 +25,18 @@ import { locale, setLocale } from '@/stores/locale';
 import { setThemeMode, themeMode } from '@/stores/theme';
 import {
   ARABIC_SIZE_LIMITS,
+  LATIN_SIZE_LIMITS,
+  TRANSLATION_SIZE_LIMITS,
   readerSettings,
   resetReaderSettings,
   updateReaderSettings,
 } from '@/stores/reader-settings';
+import {
+  canInstallPwa,
+  isIosSafari,
+  isStandalonePwa,
+  promptPwaInstall,
+} from '@/stores/pwa';
 import {
   audioPrefs,
   downloadedSurahs,
@@ -563,23 +572,8 @@ export function SettingsView() {
               </p>
             </div>
 
-            <div>
-              <label for="set-ar-size" class="mb-2 block text-xs font-semibold">
-                Ukuran teks Arab ({rs.arabicSize}px)
-              </label>
-              <input
-                id="set-ar-size"
-                type="range"
-                min={ARABIC_SIZE_LIMITS.min}
-                max={ARABIC_SIZE_LIMITS.max}
-                step={ARABIC_SIZE_LIMITS.step}
-                value={rs.arabicSize}
-                onInput={(e) =>
-                  updateReaderSettings({ arabicSize: Number((e.target as HTMLInputElement).value) })
-                }
-                class="w-full cursor-pointer"
-              />
-              <div class="mt-3 rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+            <div class="space-y-4">
+              <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
                 <p
                   class="quran-text text-right text-[var(--foreground)]"
                   dir="rtl"
@@ -589,17 +583,94 @@ export function SettingsView() {
                   بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
                 </p>
                 {rs.showTransliteration && (
-                  <p class="mt-2 text-xs italic text-[var(--muted-foreground)]">
+                  <p
+                    style={{ fontSize: `${rs.latinSize}px` }}
+                    class="mt-2 italic leading-relaxed text-[var(--muted-foreground)]"
+                  >
                     Bismillāhir-raḥmānir-raḥīm
                   </p>
                 )}
                 {rs.showTranslation && (
-                  <p class="mt-1 text-xs text-[var(--foreground)]">
+                  <p
+                    style={{ fontSize: `${rs.translationSize}px` }}
+                    class="mt-1.5 leading-relaxed text-[var(--foreground)]"
+                  >
                     {rs.translationLang === 'en'
                       ? 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'
                       : 'Dengan nama Allah Yang Maha Pengasih, Maha Penyayang.'}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <label for="set-ar-size" class="text-xs font-semibold">
+                    Ukuran teks Arab
+                  </label>
+                  <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                    {rs.arabicSize}px
+                  </span>
+                </div>
+                <input
+                  id="set-ar-size"
+                  type="range"
+                  min={ARABIC_SIZE_LIMITS.min}
+                  max={ARABIC_SIZE_LIMITS.max}
+                  step={ARABIC_SIZE_LIMITS.step}
+                  value={rs.arabicSize}
+                  onInput={(e) =>
+                    updateReaderSettings({ arabicSize: Number((e.target as HTMLInputElement).value) })
+                  }
+                  class="w-full cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <label for="set-latin-size" class="text-xs font-semibold">
+                    Ukuran teks Latin
+                  </label>
+                  <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                    {rs.latinSize}px
+                  </span>
+                </div>
+                <input
+                  id="set-latin-size"
+                  type="range"
+                  min={LATIN_SIZE_LIMITS.min}
+                  max={LATIN_SIZE_LIMITS.max}
+                  step={LATIN_SIZE_LIMITS.step}
+                  value={rs.latinSize}
+                  onInput={(e) =>
+                    updateReaderSettings({ latinSize: Number((e.target as HTMLInputElement).value) })
+                  }
+                  class="w-full cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <div class="mb-1.5 flex items-center justify-between">
+                  <label for="set-tr-size" class="text-xs font-semibold">
+                    Ukuran teks Terjemahan
+                  </label>
+                  <span class="text-xs font-semibold tabular-nums text-[var(--primary)]">
+                    {rs.translationSize}px
+                  </span>
+                </div>
+                <input
+                  id="set-tr-size"
+                  type="range"
+                  min={TRANSLATION_SIZE_LIMITS.min}
+                  max={TRANSLATION_SIZE_LIMITS.max}
+                  step={TRANSLATION_SIZE_LIMITS.step}
+                  value={rs.translationSize}
+                  onInput={(e) =>
+                    updateReaderSettings({
+                      translationSize: Number((e.target as HTMLInputElement).value),
+                    })
+                  }
+                  class="w-full cursor-pointer"
+                />
               </div>
             </div>
 
@@ -677,6 +748,43 @@ export function SettingsView() {
                 Kembalikan bawaan
               </Button>
             </div>
+          </Card>
+
+          {/* Pasang Aplikasi (PWA) */}
+          <Card class="space-y-3 p-5">
+            <div class="flex items-start gap-3">
+              <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--primary)]">
+                <Smartphone class="size-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-semibold">Pasang aplikasi (PWA)</h2>
+                <p class="text-xs text-[var(--muted-foreground)]">
+                  Buka Teras Qur&apos;an langsung dari layar utama seperti aplikasi native, lebih cepat dan bisa diakses offline.
+                </p>
+              </div>
+            </div>
+
+            {isStandalonePwa.value ? (
+              <div class="flex items-center gap-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--accent)]/40 px-3.5 py-2.5 text-xs font-medium text-[var(--foreground)]">
+                <CheckCircle2 class="size-4 shrink-0 text-[var(--primary)]" />
+                Teras Qur&apos;an sudah terpasang dan berjalan sebagai aplikasi.
+              </div>
+            ) : canInstallPwa.value ? (
+              <div>
+                <Button size="sm" onClick={() => promptPwaInstall()}>
+                  <Download class="size-4" />
+                  Pasang Teras Qur&apos;an
+                </Button>
+              </div>
+            ) : isIosSafari.value ? (
+              <p class="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-xs text-[var(--muted-foreground)]">
+                Di Safari iPhone/iPad: ketuk tombol <strong class="text-[var(--foreground)]">Bagikan</strong> lalu pilih <strong class="text-[var(--foreground)]">Tambahkan ke Layar Utama</strong>.
+              </p>
+            ) : (
+              <p class="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-xs text-[var(--muted-foreground)]">
+                Buka menu browser lalu pilih <strong class="text-[var(--foreground)]">Pasang aplikasi</strong> atau <strong class="text-[var(--foreground)]">Tambahkan ke layar utama</strong> untuk memasang Teras Qur&apos;an.
+              </p>
+            )}
           </Card>
 
           {/* Al-Qur'an Offline */}
