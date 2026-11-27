@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { ArrowLeft, Eye, Play, RefreshCw } from 'lucide-preact';
+import { ArrowRight, Eye, Play, RefreshCw } from 'lucide-preact';
 import {
   fetchAyahsByGlobalIds,
   fetchQuranMeta,
@@ -10,8 +10,8 @@ import {
 import { generateSambungQuestions, type SambungQuestion } from '@/lib/hifz/sambung-logic';
 import { toGlobalAyah } from '@/lib/quran/meta';
 import { hifzItems } from '@/stores/hifz';
-import { isAuthenticated } from '@/stores/auth';
 import { playAyah } from '@/stores/audio-player';
+import { useAuthGate } from '@/components/auth/LoginRequired';
 import { Badge, Button, Card, PageHeader } from '@/components/ui/Primitives';
 
 interface LoadedQ {
@@ -21,11 +21,18 @@ interface LoadedQ {
   surahName: string;
 }
 
+const QUESTION_COUNTS = [5, 10, 20] as const;
+
 export function SambungAyatView() {
+  const gate = useAuthGate();
+  const loggedIn = gate === 'authenticated';
+
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [source, setSource] = useState<'surah' | 'hafalan'>('surah');
-  const [surahId, setSurahId] = useState(78);
-  const [count, setCount] = useState(5);
+  const [surahId, setSurahId] = useState<number>(0);
+  const [fromAyah, setFromAyah] = useState<string>('');
+  const [toAyah, setToAyah] = useState<string>('');
+  const [count, setCount] = useState<number>(10);
 
   const [questions, setQuestions] = useState<LoadedQ[]>([]);
   const [idx, setIdx] = useState(0);
@@ -38,13 +45,33 @@ export function SambungAyatView() {
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
   }, []);
 
+  const selectedSurah = surahs.find((s) => s.id === surahId) ?? null;
+  const hifzCount = loggedIn ? hifzItems.value.length : 0;
+  const canUseHafalan = loggedIn && hifzCount > 0;
+
+  const parsedFrom = fromAyah === '' ? 1 : Number(fromAyah);
+  const parsedTo = toAyah === '' ? (selectedSurah?.ayahCount ?? 1) : Number(toAyah);
+  const validRange =
+    !selectedSurah ||
+    (Number.isInteger(parsedFrom) &&
+      Number.isInteger(parsedTo) &&
+      parsedFrom >= 1 &&
+      parsedTo <= selectedSurah.ayahCount &&
+      parsedTo - parsedFrom >= 1);
+
+  const canStart =
+    source === 'surah' ? surahId > 0 && validRange : canUseHafalan;
+
   async function startQuiz() {
+    if (!canStart) return;
     setBusy(true);
     try {
       const pool: Array<{ surahId: number; ayahNumber: number; globalId: number }> = [];
       if (source === 'surah') {
         const list = await fetchSurahAyahs(surahId);
-        list.forEach((a) => pool.push({ surahId: a.surahId, ayahNumber: a.n, globalId: a.i }));
+        list
+          .filter((a) => a.n >= parsedFrom && a.n <= parsedTo)
+          .forEach((a) => pool.push({ surahId: a.surahId, ayahNumber: a.n, globalId: a.i }));
       } else {
         for (const it of hifzItems.value) {
           for (let n = it.fromAyah; n <= it.toAyah; n++) {
@@ -90,108 +117,155 @@ export function SambungAyatView() {
     }
   }
 
-  const loggedIn = isAuthenticated.value;
   const current = questions[idx];
   const toRevise = grades.filter((g) => g.grade !== 'good');
 
   return (
     <div>
-      <a
-        href="/app/hafalan"
-        class="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--primary)] hover:underline no-underline"
-      >
-        <ArrowLeft class="size-3.5" />
-        Kembali ke Hafalan
-      </a>
       <PageHeader
         title="Latihan sambung ayat"
         description="Lihat atau dengarkan satu ayat, lalu lanjutkan ayat sesudahnya dari hafalanmu."
       />
 
       {stage === 'setup' && (
-        <Card class="space-y-5 p-6">
+        <Card class="max-w-xl space-y-5 p-5 sm:p-6">
+          {/* Sumber soal */}
           <div>
-            <p class="mb-2 text-xs font-semibold text-[var(--muted-foreground)]">Sumber soal</p>
-            <div class="grid grid-cols-2 rounded-xl bg-[var(--muted)] p-1">
+            <p class="mb-2 text-sm font-semibold text-[var(--foreground)]">Sumber soal</p>
+            <div class="grid grid-cols-2 overflow-hidden rounded-lg border border-[var(--border)] divide-x divide-[var(--border)]">
               <button
                 type="button"
                 onClick={() => setSource('surah')}
-                class={`rounded-lg py-2 text-xs font-semibold cursor-pointer ${
-                  source === 'surah' ? 'bg-[var(--card)] text-[var(--foreground)]' : 'text-[var(--muted-foreground)]'
+                class={`py-2 text-xs transition-colors cursor-pointer ${
+                  source === 'surah'
+                    ? 'bg-[var(--accent)] font-semibold text-[var(--foreground)]'
+                    : 'bg-[var(--card)] font-medium text-[var(--foreground)] hover:bg-[var(--muted)]'
                 }`}
               >
                 Pilih surah
               </button>
               <button
                 type="button"
-                onClick={() => setSource('hafalan')}
-                class={`rounded-lg py-2 text-xs font-semibold cursor-pointer ${
-                  source === 'hafalan' ? 'bg-[var(--card)] text-[var(--foreground)]' : 'text-[var(--muted-foreground)]'
+                disabled={!canUseHafalan}
+                onClick={() => {
+                  if (canUseHafalan) setSource('hafalan');
+                }}
+                class={`py-2 text-xs transition-colors ${
+                  !canUseHafalan
+                    ? 'bg-[var(--card)] font-medium text-[var(--muted-foreground)]/60 cursor-not-allowed'
+                    : source === 'hafalan'
+                      ? 'bg-[var(--accent)] font-semibold text-[var(--foreground)] cursor-pointer'
+                      : 'bg-[var(--card)] font-medium text-[var(--foreground)] hover:bg-[var(--muted)] cursor-pointer'
                 }`}
               >
-                Hafalanku ({loggedIn ? hifzItems.value.length : 0})
+                Hafalanku{canUseHafalan ? ` (${hifzCount})` : ''}
               </button>
             </div>
+            {gate === 'guest' && (
+              <p class="mt-2 text-xs text-[var(--muted-foreground)]">
+                Masuk untuk berlatih dari hafalanmu.
+              </p>
+            )}
+            {loggedIn && hifzCount === 0 && (
+              <p class="mt-2 text-xs text-[var(--muted-foreground)]">
+                Belum ada hafalan yang ditandai. Tandai hafalan di halaman Hafalan terlebih dahulu.
+              </p>
+            )}
           </div>
 
-          {source === 'hafalan' && !loggedIn && (
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-3 text-xs text-[var(--muted-foreground)]">
-              <span>Masuk untuk berlatih dari hafalanmu.</span>
-              <a
-                href="/auth/login?redirect=%2Fapp%2Fsambung-ayat"
-                class="font-semibold text-[var(--primary)] hover:underline no-underline"
-              >
-                Masuk
-              </a>
-            </div>
-          )}
-
+          {/* Surah select */}
           {source === 'surah' && (
-            <div>
-              <label class="mb-1.5 block text-xs font-medium text-[var(--muted-foreground)]">
-                Surah
-              </label>
-              <select
-                value={surahId}
-                onChange={(e) => setSurahId(Number((e.target as HTMLSelectElement).value))}
-                class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"
-              >
-                {surahs.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.id}. {s.name} ({s.ayahCount} ayat)
-                  </option>
-                ))}
-              </select>
+            <div class="space-y-3">
+              <div>
+                <label
+                  for="sambung-surah"
+                  class="mb-2 block text-sm font-semibold text-[var(--foreground)]"
+                >
+                  Surah
+                </label>
+                <select
+                  id="sambung-surah"
+                  value={surahId}
+                  onChange={(e) => {
+                    const next = Number((e.target as HTMLSelectElement).value);
+                    setSurahId(next);
+                    setFromAyah('');
+                    setToAyah('');
+                  }}
+                  class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                >
+                  <option value={0}>Pilih surah</option>
+                  {surahs.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.id}. {s.name} ({s.ayahCount} ayat)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedSurah && (
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="text-xs font-medium text-[var(--muted-foreground)]">
+                    Dari ayat (opsional)
+                    <input
+                      type="number"
+                      min={1}
+                      max={selectedSurah.ayahCount}
+                      placeholder="1"
+                      value={fromAyah}
+                      onInput={(e) => setFromAyah((e.target as HTMLInputElement).value)}
+                      class="mt-1 h-9 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] tabular-nums focus:border-[var(--primary)] focus:outline-none"
+                    />
+                  </label>
+                  <label class="text-xs font-medium text-[var(--muted-foreground)]">
+                    Sampai ayat (opsional)
+                    <input
+                      type="number"
+                      min={1}
+                      max={selectedSurah.ayahCount}
+                      placeholder={String(selectedSurah.ayahCount)}
+                      value={toAyah}
+                      onInput={(e) => setToAyah((e.target as HTMLInputElement).value)}
+                      class="mt-1 h-9 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm text-[var(--foreground)] tabular-nums focus:border-[var(--primary)] focus:outline-none"
+                    />
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
+          {/* Jumlah soal */}
           <div>
-            <p class="mb-1.5 text-xs font-medium text-[var(--muted-foreground)]">Jumlah soal</p>
-            <div class="flex flex-wrap gap-2">
-              {[5, 10, 15, 20].map((n) => (
-                <Button
+            <p class="mb-2 text-sm font-semibold text-[var(--foreground)]">Jumlah soal</p>
+            <div class="grid grid-cols-3 overflow-hidden rounded-lg border border-[var(--border)] divide-x divide-[var(--border)]">
+              {QUESTION_COUNTS.map((n) => (
+                <button
                   key={n}
-                  size="sm"
-                  variant={count === n ? 'primary' : 'outline'}
+                  type="button"
                   onClick={() => setCount(n)}
+                  class={`py-2 text-xs tabular-nums transition-colors cursor-pointer ${
+                    count === n
+                      ? 'bg-[var(--accent)] font-semibold text-[var(--foreground)]'
+                      : 'bg-[var(--card)] font-medium text-[var(--foreground)] hover:bg-[var(--muted)]'
+                  }`}
                 >
-                  {n} soal
-                </Button>
+                  {n}
+                </button>
               ))}
             </div>
           </div>
 
-          <Button
-            disabled={busy || (source === 'hafalan' && (!loggedIn || hifzItems.value.length === 0))}
-            onClick={startQuiz}
-          >
-            {busy ? 'Menyiapkan soal…' : 'Mulai latihan'}
-          </Button>
+          <div class="pt-1">
+            <Button size="sm" disabled={busy || !canStart} onClick={startQuiz}>
+              {busy ? 'Menyiapkan…' : 'Mulai'}
+              <ArrowRight class="size-3.5" />
+            </Button>
+          </div>
         </Card>
       )}
 
       {stage === 'quiz' && current && (
-        <Card class="space-y-5 p-6">
+        <Card class="max-w-2xl space-y-5 p-6">
           <div class="flex items-center justify-between">
             <Badge variant="primary" class="tabular-nums">
               Soal {idx + 1} dari {questions.length}
@@ -258,7 +332,7 @@ export function SambungAyatView() {
       )}
 
       {stage === 'done' && (
-        <Card class="space-y-5 p-6">
+        <Card class="max-w-2xl space-y-5 p-6">
           <div>
             <h2 class="text-lg font-bold">Latihan selesai</h2>
             <p class="text-sm text-[var(--muted-foreground)]">

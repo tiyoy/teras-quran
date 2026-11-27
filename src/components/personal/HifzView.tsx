@@ -103,7 +103,13 @@ export function HifzView() {
       <div>
         <PageHeader
           title="Hafalan"
-          description="Catat hafalan, murajaah tepat waktu (SM-2), dan lihat progresmu."
+          description="Catat hafalan, murajaah tepat waktu, dan lihat progresmu."
+          actions={
+            <Button size="sm" variant="outline" href="/app/sambung-ayat">
+              <Repeat class="size-3.5" />
+              Latihan sambung ayat
+            </Button>
+          }
         />
         {gate === 'loading' ? (
           <AuthGateSkeleton />
@@ -118,7 +124,7 @@ export function HifzView() {
     <div>
       <PageHeader
         title="Hafalan"
-        description="Catat hafalan, murajaah tepat waktu (SM-2), dan lihat progresmu."
+        description="Catat hafalan, murajaah tepat waktu, dan lihat progresmu."
         actions={
           <>
             <Button size="sm" variant="outline" href="/app/sambung-ayat">
