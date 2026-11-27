@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { Bell, CheckCheck } from 'lucide-preact';
 import {
   markAllNotificationsRead,
@@ -16,8 +16,14 @@ const KIND_LABELS = {
 
 export function NotificationsView() {
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const list = notifications.value;
-  const unread = unreadNotificationCount.value;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const list = mounted ? notifications.value : [];
+  const unread = mounted ? unreadNotificationCount.value : 0;
 
   const filtered = list.filter((n) => {
     if (filter === 'unread') return !n.read;
@@ -84,17 +90,27 @@ export function NotificationsView() {
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="space-y-1">
-                  <div class="flex items-center gap-2">
+                  <div class="flex flex-wrap items-center gap-2">
                     <Badge variant={n.type === 'reminder' ? 'primary' : 'default'}>
                       {KIND_LABELS[n.type]}
                     </Badge>
-                    {!n.read && <span class="size-2 rounded-full bg-[var(--primary)]" />}
-                    <span class="text-[11px] text-[var(--muted-foreground)]">
+                    {!n.read && (
+                      <span
+                        key="unread-dot"
+                        aria-hidden="true"
+                        class="size-2 shrink-0 rounded-full bg-[var(--primary)]"
+                      />
+                    )}
+                    <time
+                      key="created-at"
+                      dateTime={new Date(n.timestamp).toISOString()}
+                      class="whitespace-nowrap text-[11px] tabular-nums text-[var(--muted-foreground)]"
+                    >
                       {new Intl.DateTimeFormat('id-ID', {
                         dateStyle: 'medium',
                         timeStyle: 'short',
                       }).format(new Date(n.timestamp))}
-                    </span>
+                    </time>
                   </div>
                   <p class="text-sm font-semibold text-[var(--foreground)]">{n.title}</p>
                   <p class="text-xs leading-relaxed text-[var(--muted-foreground)]">{n.body}</p>

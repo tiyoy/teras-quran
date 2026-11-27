@@ -22,8 +22,10 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
   const [pathname, setPathname] = useState(initialPath);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     bootstrapAppStores();
 
     const syncPath = () => {
@@ -58,7 +60,7 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
     };
   }, []);
 
-  const unread = unreadNotificationCount.value;
+  const unread = mounted ? unreadNotificationCount.value : 0;
 
   const renderSidebarNav = () => (
     <div class="flex h-full flex-col bg-[var(--sidebar)] text-[var(--sidebar-foreground)]">
