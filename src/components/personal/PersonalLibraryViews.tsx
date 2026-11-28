@@ -272,6 +272,9 @@ export function FavoritesView() {
           }}
         >
           <input
+            id="create-collection-name"
+            name="collectionName"
+            aria-label="Nama koleksi baru"
             type="text"
             maxLength={60}
             required
@@ -459,6 +462,9 @@ export function CollectionDetailView() {
           }}
         >
           <input
+            id="rename-collection-name"
+            name="renameCollection"
+            aria-label="Nama baru koleksi"
             type="text"
             maxLength={60}
             required
@@ -544,6 +550,9 @@ export function NotesView() {
           <div class="relative max-w-md">
             <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
             <input
+              id="notes-search"
+              name="notesSearch"
+              aria-label="Cari di catatan"
               type="text"
               value={query}
               onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
@@ -610,6 +619,9 @@ export function NotesView() {
         >
           <div class="space-y-3">
             <textarea
+              id="edit-note-textarea"
+              name="noteText"
+              aria-label="Isi catatan ayat"
               rows={5}
               maxLength={2000}
               value={editing.text}

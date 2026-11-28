@@ -141,6 +141,8 @@ export function QuranIndexView({
           }}
         >
           <input
+            id="index-page-filter"
+            name="pageNumber"
             type="number"
             min={1}
             max={604}
@@ -198,6 +200,8 @@ export function QuranIndexView({
       />
       <div class="mb-5 max-w-xs">
         <input
+          id="index-ruku-filter"
+          name="rukuNumber"
           type="number"
           min={1}
           max={556}

@@ -284,6 +284,8 @@ export function AudioPlayerBar() {
               <label class="text-xs text-[var(--muted-foreground)]">
                 Dari
                 <input
+                  id="audio-range-from"
+                  name="rangeFrom"
                   type="number"
                   min={1}
                   max={maxAyah}
@@ -295,6 +297,8 @@ export function AudioPlayerBar() {
               <label class="text-xs text-[var(--muted-foreground)]">
                 Sampai
                 <input
+                  id="audio-range-to"
+                  name="rangeTo"
                   type="number"
                   min={1}
                   max={maxAyah}
@@ -306,6 +310,8 @@ export function AudioPlayerBar() {
               <label class="text-xs text-[var(--muted-foreground)]">
                 Putaran (0=∞)
                 <input
+                  id="audio-range-times"
+                  name="rangeTimes"
                   type="number"
                   min={0}
                   max={99}

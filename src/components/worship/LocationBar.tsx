@@ -79,7 +79,10 @@ export function LocationBar() {
           <div class="relative">
             <Search class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
             <input
+              id="location-city-search"
+              name="citySearch"
               type="text"
+              aria-label="Cari kota atau provinsi"
               value={search}
               onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
               placeholder="Cari nama kota atau provinsi…"

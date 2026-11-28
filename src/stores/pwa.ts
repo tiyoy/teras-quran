@@ -44,6 +44,9 @@ export function initPwaListener(): void {
   }
 
   window.addEventListener('beforeinstallprompt', (e) => {
+    // Only intercept the native install banner on the Settings page where our install button is visible,
+    // avoiding Chrome's "Banner not shown: beforeinstallpromptevent.preventDefault() called" notice elsewhere.
+    if (!window.location.pathname.startsWith('/app/pengaturan')) return;
     e.preventDefault();
     deferredPrompt = e as BeforeInstallPromptEvent;
     canInstallPwa.value = !detectStandalone();

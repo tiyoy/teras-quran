@@ -315,7 +315,9 @@ export function SettingsView() {
                       </label>
                       <input
                         id="prof-name"
+                        name="displayName"
                         type="text"
+                        autoComplete="name"
                         required
                         value={fullName}
                         onInput={(e) => setFullName((e.target as HTMLInputElement).value)}
@@ -328,7 +330,9 @@ export function SettingsView() {
                       </label>
                       <input
                         id="prof-email"
+                        name="email"
                         type="email"
+                        autoComplete="email"
                         disabled
                         value={user?.email || ''}
                         class="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--muted)] px-3 text-sm text-[var(--muted-foreground)]"
@@ -421,7 +425,11 @@ export function SettingsView() {
                       }}
                     >
                       <input
+                        id="settings-new-email"
+                        name="new-email"
                         type="email"
+                        autoComplete="email"
+                        aria-label="Alamat email baru"
                         required
                         value={newEmail}
                         onInput={(e) => setNewEmail((e.target as HTMLInputElement).value)}
@@ -451,7 +459,22 @@ export function SettingsView() {
                       }}
                     >
                       <input
+                        id="settings-pw-username"
+                        name="username"
+                        type="email"
+                        autoComplete="username"
+                        value={user.email || ''}
+                        readOnly
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        class="sr-only"
+                      />
+                      <input
+                        id="settings-new-pw"
+                        name="new-password"
                         type="password"
+                        autoComplete="new-password"
+                        aria-label="Kata sandi baru"
                         required
                         minLength={8}
                         value={newPw}
@@ -460,7 +483,11 @@ export function SettingsView() {
                         class="h-9 rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"
                       />
                       <input
+                        id="settings-confirm-pw"
+                        name="confirm-password"
                         type="password"
+                        autoComplete="new-password"
+                        aria-label="Ulangi kata sandi baru"
                         required
                         value={confirmPw}
                         onInput={(e) => setConfirmPw((e.target as HTMLInputElement).value)}
@@ -1187,36 +1214,54 @@ export function SettingsView() {
         )}
 
         {deleteStep === 2 && user && (
-          <div class="space-y-4 text-sm">
+          <form
+            class="space-y-4 text-sm"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await reauthenticateUser(reauthPw);
+                setDeleteStep(3);
+              } catch (err) {
+                showToast(mapAuthError(err), { variant: 'error' });
+              }
+            }}
+          >
             <p class="text-xs text-[var(--muted-foreground)]">
               Demi keamanan, konfirmasi identitasmu terlebih dahulu.
             </p>
             {hasPasswordProvider && (
-              <input
-                type="password"
-                value={reauthPw}
-                onInput={(e) => setReauthPw((e.target as HTMLInputElement).value)}
-                placeholder="Kata sandi saat ini"
-                class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"
-              />
+              <>
+                <input
+                  id="settings-reauth-username"
+                  name="username"
+                  type="email"
+                  autoComplete="username"
+                  value={user.email || ''}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  class="sr-only"
+                />
+                <input
+                  id="settings-reauth-pw"
+                  name="current-password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-label="Kata sandi saat ini"
+                  value={reauthPw}
+                  onInput={(e) => setReauthPw((e.target as HTMLInputElement).value)}
+                  placeholder="Kata sandi saat ini"
+                  class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"
+                />
+              </>
             )}
             <div class="flex justify-end gap-2">
               <Button size="sm" variant="outline" onClick={() => setDeleteStep(1)}>Kembali</Button>
-              <Button
-                size="sm"
-                onClick={async () => {
-                  try {
-                    await reauthenticateUser(reauthPw);
-                    setDeleteStep(3);
-                  } catch (err) {
-                    showToast(mapAuthError(err), { variant: 'error' });
-                  }
-                }}
-              >
+              <Button size="sm" type="submit">
                 {hasPasswordProvider ? 'Konfirmasi sandi' : 'Masuk ulang dengan Google'}
               </Button>
             </div>
-          </div>
+          </form>
         )}
 
         {deleteStep === 3 && (
@@ -1225,14 +1270,20 @@ export function SettingsView() {
               Ketik <strong class="text-[var(--destructive)]">HAPUS</strong> untuk mengonfirmasi penghapusan permanen.
             </p>
             <input
+              id="settings-confirm-delete"
+              name="confirmDelete"
               type="text"
+              autoComplete="off"
+              aria-label="Ketik HAPUS untuk konfirmasi"
               value={confirmWord}
               onInput={(e) => setConfirmWord((e.target as HTMLInputElement).value)}
               placeholder="Ketik HAPUS"
               class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm font-semibold"
             />
-            <label class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
+            <label for="settings-clear-device" class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
               <input
+                id="settings-clear-device"
+                name="clearDevice"
                 type="checkbox"
                 checked={clearDevice}
                 onChange={(e) => setClearDevice((e.target as HTMLInputElement).checked)}

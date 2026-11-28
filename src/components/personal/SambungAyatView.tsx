@@ -208,6 +208,8 @@ export function SambungAyatView() {
                   <label class="text-xs font-medium text-[var(--muted-foreground)]">
                     Dari ayat (opsional)
                     <input
+                      id="sambung-from-ayah"
+                      name="fromAyah"
                       type="number"
                       min={1}
                       max={selectedSurah.ayahCount}
@@ -220,6 +222,8 @@ export function SambungAyatView() {
                   <label class="text-xs font-medium text-[var(--muted-foreground)]">
                     Sampai ayat (opsional)
                     <input
+                      id="sambung-to-ayah"
+                      name="toAyah"
                       type="number"
                       min={1}
                       max={selectedSurah.ayahCount}

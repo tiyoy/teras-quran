@@ -84,6 +84,8 @@ export function TafsirView() {
 
         <div class="flex items-center gap-2">
           <select
+            id="tafsir-surah-select"
+            name="surah"
             aria-label="Pilih surah"
             value={surahId}
             onChange={(e) => navigateTo(Number((e.target as HTMLSelectElement).value), 1)}
@@ -97,6 +99,8 @@ export function TafsirView() {
           </select>
 
           <select
+            id="tafsir-ayat-select"
+            name="ayat"
             aria-label="Pilih ayat"
             value={ayahNum}
             onChange={(e) => navigateTo(surahId, Number((e.target as HTMLSelectElement).value))}

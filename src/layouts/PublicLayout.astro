@@ -14,6 +14,7 @@ const {
   title = "Al-Qur'an Digital — Teras Qur'an",
   description,
 } = Astro.props;
+const currentYear = new Date().getFullYear();
 ---
 
 <!doctype html>
@@ -54,7 +55,7 @@ const {
     <footer class="border-t border-[var(--border)] bg-[var(--background)]">
       <div class="mx-auto flex w-full max-w-5xl flex-col items-center gap-2 px-4 py-6 text-center text-xs text-[var(--muted-foreground)] sm:flex-row sm:justify-between sm:text-left">
         <p>
-          Al-Qur'an Digital oleh <a href="/tentang" class="font-medium text-[var(--foreground)] underline-offset-4 hover:underline">Teras Qur'an</a>. Lisensi MIT. © <script is:inline>document.write(new Date().getFullYear());</script> Cecep Maulanaツ.
+          Al-Qur'an Digital oleh <a href="/tentang" class="font-medium text-[var(--foreground)] underline-offset-4 hover:underline">Teras Qur'an</a>. Lisensi MIT. © <span data-tq-year>{currentYear}</span> Cecep Maulanaツ.
         </p>
         <nav class="flex flex-wrap justify-center gap-x-4 gap-y-1">
           <a href="/panduan" data-i18n="nav.guide" class="underline-offset-4 hover:text-[var(--foreground)] hover:underline">Panduan</a>
@@ -63,5 +64,14 @@ const {
         </nav>
       </div>
     </footer>
+    <script is:inline>
+      (function () {
+        var y = String(new Date().getFullYear());
+        var els = document.querySelectorAll('[data-tq-year]');
+        for (var i = 0; i < els.length; i++) {
+          els[i].textContent = y;
+        }
+      })();
+    </script>
   </body>
 </html>

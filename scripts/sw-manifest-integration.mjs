@@ -68,6 +68,27 @@ export function swManifestIntegration() {
   return {
     name: 'tq-sw-manifest',
     hooks: {
+      'astro:server:setup': ({ server }) => {
+        server.middlewares.use('/sw-manifest.json', (_req, res) => {
+          const surahRange = Array.from({ length: 114 }, (_, i) => i + 1);
+          const devManifest = {
+            version: 'tq-dev',
+            dev: true,
+            shellPages: [],
+            assets: [],
+            quranCore: [
+              '/quran/v1/meta.json',
+              ...surahRange.map((id) => `/quran/v1/surah/${id}.json`),
+            ],
+            quranExtra: [],
+            tafsir: [],
+          };
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(JSON.stringify(devManifest));
+        });
+      },
       'astro:build:done': async ({ dir, logger }) => {
         const outDir = fileURLToPath(dir);
         const [astroAssets, fontAssets, iconAssets] = await Promise.all([

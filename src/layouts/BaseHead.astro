@@ -21,7 +21,6 @@ const {
 <meta name="theme-color" content="#0F52BA" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#0B111E" media="(prefers-color-scheme: dark)" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Teras Qur'an" />
 <meta name="application-name" content="Teras Qur'an" />
@@ -69,13 +68,9 @@ const {
       applySplashSkip();
     });
 
-    // Capture PWA install prompt early before Preact islands hydrate
+    // Register Service Worker early for offline-first precaching
     if (!window.__tqPwaBound) {
       window.__tqPwaBound = true;
-      window.addEventListener('beforeinstallprompt', function (e) {
-        e.preventDefault();
-        window.__tqInstallPrompt = e;
-      });
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
           navigator.serviceWorker

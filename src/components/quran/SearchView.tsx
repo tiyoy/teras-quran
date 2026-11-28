@@ -93,6 +93,8 @@ export function SearchView() {
         <div class="relative">
           <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            id="quran-search-input"
+            name="q"
             type="text"
             value={query}
             onInput={(e) => {

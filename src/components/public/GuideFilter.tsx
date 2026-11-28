@@ -36,6 +36,8 @@ export function GuideFilter() {
         <div class="relative">
           <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            id="guide-search"
+            name="guideSearch"
             type="text"
             value={query}
             onInput={(e) => setQuery((e.target as HTMLInputElement).value)}

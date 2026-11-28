@@ -234,8 +234,10 @@ export function HifzView() {
       {/* TAB: SEMUA */}
       {tab === 'all' && (
         <div class="space-y-4">
-          <label class="inline-flex items-center gap-2 text-xs font-medium text-[var(--foreground)] cursor-pointer">
+          <label for="hifz-weak-only" class="inline-flex items-center gap-2 text-xs font-medium text-[var(--foreground)] cursor-pointer">
             <input
+              id="hifz-weak-only"
+              name="weakOnly"
               type="checkbox"
               checked={weakOnly}
               onChange={(e) => setWeakOnly((e.target as HTMLInputElement).checked)}
@@ -399,6 +401,9 @@ export function HifzView() {
 
           {importKind === 'surah' ? (
             <select
+              id="hifz-import-surah"
+              name="importSurah"
+              aria-label="Pilih surah untuk ditandai"
               value={importId}
               onChange={(e) => setImportId(Number((e.target as HTMLSelectElement).value))}
               class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"
@@ -411,6 +416,9 @@ export function HifzView() {
             </select>
           ) : (
             <select
+              id="hifz-import-juz"
+              name="importJuz"
+              aria-label="Pilih juz untuk ditandai"
               value={importId}
               onChange={(e) => setImportId(Number((e.target as HTMLSelectElement).value))}
               class="h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-3 text-sm"

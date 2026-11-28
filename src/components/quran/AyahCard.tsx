@@ -462,6 +462,9 @@ export function AyahCard({
       >
         <div class="space-y-3">
           <textarea
+            id={`ayah-note-${ayah.i}`}
+            name="ayahNote"
+            aria-label="Catatan ayat"
             rows={5}
             maxLength={2000}
             value={noteDraft}
@@ -550,6 +553,9 @@ export function AyahCard({
             }}
           >
             <input
+              id={`ayah-new-col-${ayah.i}`}
+              name="newCollectionName"
+              aria-label="Nama koleksi baru"
               type="text"
               maxLength={60}
               value={newColName}
@@ -576,6 +582,8 @@ export function AyahCard({
             <label class="text-xs font-medium text-[var(--muted-foreground)]">
               Dari ayat
               <input
+                id={`ayah-hifz-from-${ayah.i}`}
+                name="hifzFrom"
                 type="number"
                 min={1}
                 max={maxSurahAyah}
@@ -587,6 +595,8 @@ export function AyahCard({
             <label class="text-xs font-medium text-[var(--muted-foreground)]">
               Sampai ayat
               <input
+                id={`ayah-hifz-to-${ayah.i}`}
+                name="hifzTo"
                 type="number"
                 min={1}
                 max={maxSurahAyah}
@@ -668,6 +678,8 @@ export function AyahCard({
           <div class="flex flex-wrap gap-2 text-xs">
             <label class="inline-flex items-center gap-1.5">
               <input
+                id={`ayah-share-ar-${ayah.i}`}
+                name="shareArabic"
                 type="checkbox"
                 checked={shareAr}
                 onChange={(e) => {
@@ -679,6 +691,8 @@ export function AyahCard({
             </label>
             <label class="inline-flex items-center gap-1.5">
               <input
+                id={`ayah-share-lat-${ayah.i}`}
+                name="shareLatin"
                 type="checkbox"
                 checked={shareLat}
                 onChange={(e) => setShareLat((e.target as HTMLInputElement).checked)}
@@ -687,6 +701,8 @@ export function AyahCard({
             </label>
             <label class="inline-flex items-center gap-1.5">
               <input
+                id={`ayah-share-tr-${ayah.i}`}
+                name="shareTranslation"
                 type="checkbox"
                 checked={shareTr}
                 onChange={(e) => {

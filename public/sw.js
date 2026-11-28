@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'tq-shell-v4';
+const SHELL_CACHE = 'tq-shell-v5';
 const QURAN_CACHE = 'tq-quran-offline-v1';
 const AUDIO_CACHE = 'tq-audio-v1';
 
@@ -169,6 +169,20 @@ function warmOfflineCache(options = {}) {
   warmingPromise = (async () => {
     try {
       const manifest = await loadManifest();
+      if (manifest.dev && !options.forceExtra) {
+        const counts = await countCachedItems();
+        await broadcastStatus({
+          running: false,
+          phase: 'idle',
+          done: 0,
+          total: 0,
+          surahsCached: counts.surahsCached,
+          pagesCached: counts.pagesCached,
+          tafsirCached: counts.tafsirCached,
+          ready: counts.surahsCached >= 114,
+        });
+        return;
+      }
       const saveData = Boolean(self.navigator?.connection?.saveData) && !options.forceExtra;
 
       const shellUrls = [...new Set([...(manifest.shellPages || []), ...(manifest.assets || [])])];
@@ -394,15 +408,37 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
 
+  // Never intercept Vite dev internals or the manifest probe
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname === '/sw-manifest.json' ||
+      url.pathname.startsWith('/@vite') ||
+      url.pathname.startsWith('/@id') ||
+      url.pathname.startsWith('/@fs') ||
+      url.pathname.startsWith('/src/') ||
+      url.pathname.startsWith('/node_modules/'))
+  ) {
+    return;
+  }
+
   // 1. Quran JSON data (meta, 114 surahs, 4 search indexes, 114 tajwid, 114 tafsir): strict Cache-First
   if (url.origin === self.location.origin && url.pathname.startsWith('/quran/v1/')) {
     event.respondWith(
       caches.open(QURAN_CACHE).then(async (cache) => {
         const hit = await cache.match(request, { ignoreSearch: true });
         if (hit) return hit;
-        const res = await fetch(request);
-        if (res.ok) cache.put(request, res.clone());
-        return res;
+        try {
+          const res = await fetch(request);
+          if (res.ok) {
+            cache.put(request, res.clone()).catch(() => {});
+          }
+          return res;
+        } catch {
+          return new Response(JSON.stringify({ error: 'offline' }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          });
+        }
       })
     );
     return;
@@ -413,7 +449,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open(AUDIO_CACHE).then(async (cache) => {
         const hit = await cache.match(request);
-        return hit || fetch(request);
+        if (hit) return hit;
+        try {
+          return await fetch(request);
+        } catch {
+          return new Response('', { status: 503, statusText: 'Offline' });
+        }
       })
     );
     return;
@@ -432,9 +473,15 @@ self.addEventListener('fetch', (event) => {
       caches.open(SHELL_CACHE).then(async (cache) => {
         const hit = await cache.match(request);
         if (hit) return hit;
-        const res = await fetch(request);
-        if (res.ok) cache.put(request, res.clone());
-        return res;
+        try {
+          const res = await fetch(request);
+          if (res.ok) {
+            cache.put(request, res.clone()).catch(() => {});
+          }
+          return res;
+        } catch {
+          return new Response('', { status: 503, statusText: 'Offline' });
+        }
       })
     );
     return;

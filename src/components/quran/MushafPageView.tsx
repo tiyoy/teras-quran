@@ -275,6 +275,8 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
           }}
         >
           <input
+            id="mushaf-jump-page"
+            name="jumpPage"
             type="number"
             min={1}
             max={604}

@@ -174,7 +174,9 @@ export function LoginForm() {
           </label>
           <input
             id="login-email"
+            name="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
@@ -198,7 +200,9 @@ export function LoginForm() {
           <div class="relative">
             <input
               id="login-password"
+              name="password"
               type={(showPw ? 'text' : 'password') as 'text'}
+              autoComplete="current-password"
               required
               value={password}
               onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
@@ -313,7 +317,9 @@ export function RegisterForm() {
           </label>
           <input
             id="reg-name"
+            name="name"
             type="text"
+            autoComplete="name"
             required
             value={name}
             onInput={(e) => setName((e.target as HTMLInputElement).value)}
@@ -327,7 +333,9 @@ export function RegisterForm() {
           </label>
           <input
             id="reg-email"
+            name="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
@@ -341,7 +349,9 @@ export function RegisterForm() {
           </label>
           <input
             id="reg-pw"
+            name="new-password"
             type="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={password}
@@ -355,7 +365,9 @@ export function RegisterForm() {
           </label>
           <input
             id="reg-confirm"
+            name="confirm-password"
             type="password"
+            autoComplete="new-password"
             required
             value={confirm}
             onInput={(e) => setConfirm((e.target as HTMLInputElement).value)}
@@ -445,7 +457,9 @@ export function ResetPasswordForm() {
             </label>
             <input
               id="reset-email"
+              name="email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onInput={(e) => setEmail((e.target as HTMLInputElement).value)}

@@ -77,7 +77,10 @@ export function CommandPalette({
           <Search class="size-4 shrink-0 text-[var(--muted-foreground)]" />
           <input
             ref={inputRef}
+            id="command-palette-search"
+            name="commandQuery"
             type="text"
+            aria-label="Cari menu, nama surah, atau ayat"
             value={query}
             onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
             onKeyDown={(e) => {

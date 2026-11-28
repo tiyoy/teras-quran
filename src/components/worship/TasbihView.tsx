@@ -397,7 +397,10 @@ export function TasbihView() {
                 }}
               >
                 <input
+                  id="tasbih-custom-target"
+                  name="customTarget"
                   type="number"
+                  aria-label="Target custom dzikir"
                   min={1}
                   max={10000}
                   value={customTargetInput}
@@ -576,8 +579,10 @@ export function TasbihView() {
           }}
         >
           <div>
-            <label class="mb-1 block text-xs font-medium">Nama dzikir *</label>
+            <label for="tasbih-form-title" class="mb-1 block text-xs font-medium">Nama dzikir *</label>
             <input
+              id="tasbih-form-title"
+              name="title"
               type="text"
               required
               maxLength={60}
@@ -589,8 +594,10 @@ export function TasbihView() {
           </div>
 
           <div>
-            <label class="mb-1 block text-xs font-medium">Target jumlah dzikir (0 = tanpa batas)</label>
+            <label for="tasbih-form-target" class="mb-1 block text-xs font-medium">Target jumlah dzikir (0 = tanpa batas)</label>
             <input
+              id="tasbih-form-target"
+              name="target"
               type="number"
               min={0}
               max={10000}
@@ -601,8 +608,10 @@ export function TasbihView() {
           </div>
 
           <div>
-            <label class="mb-1 block text-xs font-medium">Teks Arab (opsional)</label>
+            <label for="tasbih-form-arabic" class="mb-1 block text-xs font-medium">Teks Arab (opsional)</label>
             <input
+              id="tasbih-form-arabic"
+              name="arabic"
               type="text"
               dir="rtl"
               lang="ar"
@@ -614,8 +623,10 @@ export function TasbihView() {
           </div>
 
           <div>
-            <label class="mb-1 block text-xs font-medium">Bacaan Latin (opsional)</label>
+            <label for="tasbih-form-latin" class="mb-1 block text-xs font-medium">Bacaan Latin (opsional)</label>
             <input
+              id="tasbih-form-latin"
+              name="latin"
               type="text"
               value={formLatin}
               onInput={(e) => setFormLatin((e.target as HTMLInputElement).value)}
@@ -625,8 +636,10 @@ export function TasbihView() {
           </div>
 
           <div>
-            <label class="mb-1 block text-xs font-medium">Arti singkat (opsional)</label>
+            <label for="tasbih-form-meaning" class="mb-1 block text-xs font-medium">Arti singkat (opsional)</label>
             <input
+              id="tasbih-form-meaning"
+              name="meaning"
               type="text"
               value={formMeaning}
               onInput={(e) => setFormMeaning((e.target as HTMLInputElement).value)}

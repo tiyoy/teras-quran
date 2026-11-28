@@ -45,6 +45,8 @@ export function SurahListView() {
         <div class="relative flex-1">
           <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" />
           <input
+            id="surah-search"
+            name="surahSearch"
             type="text"
             value={query}
             onInput={(e) => setQuery((e.target as HTMLInputElement).value)}

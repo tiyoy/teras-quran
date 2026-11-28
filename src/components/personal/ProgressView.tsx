@@ -358,6 +358,8 @@ export function ProgressView() {
             <label class="text-xs font-medium text-[var(--muted-foreground)]">
               Satuan
               <select
+                id="progress-goal-unit"
+                name="goalUnit"
                 value={unit}
                 onChange={(e) => setUnit((e.target as HTMLSelectElement).value as ReadingGoal['unit'])}
                 class="mt-1 h-10 w-full rounded-lg border border-[var(--input)] bg-[var(--background)] px-2.5 text-sm text-[var(--foreground)]"
@@ -370,6 +372,8 @@ export function ProgressView() {
             <label class="text-xs font-medium text-[var(--muted-foreground)]">
               Jumlah per hari
               <input
+                id="progress-goal-amount"
+                name="goalAmount"
                 type="number"
                 min={1}
                 value={amount}
@@ -382,6 +386,8 @@ export function ProgressView() {
           <label class="block text-xs font-medium text-[var(--muted-foreground)]">
             Target tanggal khatam (opsional)
             <input
+              id="progress-goal-date"
+              name="goalTargetDate"
               type="date"
               value={targetDate}
               onInput={(e) => setTargetDate((e.target as HTMLInputElement).value)}
