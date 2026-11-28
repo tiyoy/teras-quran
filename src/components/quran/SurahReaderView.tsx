@@ -351,7 +351,7 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
             variant={saved ? 'secondary' : 'outline'}
             onClick={() => toggleSavedSurah(surah.id)}
           >
-            <Star class={`size-3.5 ${saved ? 'fill-current text-[var(--gold)]' : ''}`} />
+            <Star class={`size-3.5 ${saved ? 'fill-current text-[var(--primary)]' : ''}`} />
             {saved ? 'Surah pilihan' : 'Simpan surah'}
           </Button>
 

@@ -221,7 +221,7 @@ export function DashboardView() {
           <Card class="h-full p-4 transition-colors hover:border-[var(--primary)]">
             <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
               <span>Hari beruntun</span>
-              <Flame class="size-4 text-[var(--gold)]" />
+              <Flame class="size-4 text-[var(--primary)]" />
             </div>
             <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--foreground)]">
               {streakVal}
@@ -430,7 +430,7 @@ export function DashboardView() {
               class="flex items-center justify-between rounded-xl border border-[var(--border)] p-3 text-[var(--foreground)] hover:border-[var(--primary)] no-underline"
             >
               <span class="flex items-center gap-2 font-medium">
-                <Star class="size-4 text-[var(--gold)]" /> Surah pilihan
+                <Star class="size-4 text-[var(--primary)]" /> Surah pilihan
               </span>
               <span class="font-semibold tabular-nums text-[var(--muted-foreground)]">
                 {savedSurahsCount}

@@ -735,7 +735,7 @@ export function SavedSurahsView() {
                 type="button"
                 onClick={() => toggleSavedSurah(s.id)}
                 aria-label="Hapus dari surah pilihan"
-                class="rounded-lg p-1.5 text-[var(--gold)] hover:bg-[var(--muted)] cursor-pointer"
+                class="rounded-lg p-1.5 text-[var(--primary)] hover:bg-[var(--muted)] cursor-pointer"
               >
                 <Star class="size-4 fill-current" />
               </button>

@@ -144,7 +144,7 @@ export function SurahListView() {
                   aria-label={starred ? 'Hapus dari surah pilihan' : 'Simpan ke surah pilihan'}
                   class="shrink-0 rounded-lg p-1.5 text-[var(--muted-foreground)] hover:bg-[var(--muted)] cursor-pointer"
                 >
-                  <Star class={`size-4 ${starred ? 'fill-current text-[var(--gold)]' : ''}`} />
+                  <Star class={`size-4 ${starred ? 'fill-current text-[var(--primary)]' : ''}`} />
                 </button>
               </div>
             );

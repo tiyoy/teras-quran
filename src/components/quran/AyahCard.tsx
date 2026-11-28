@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   BookHeart,
   BookOpen,
@@ -72,6 +72,14 @@ export function AyahCard({
 
   const [revealed, setRevealed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+    maxHeight: number;
+  } | null>(null);
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null);
+  const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [colOpen, setColOpen] = useState(false);
@@ -93,6 +101,65 @@ export function AyahCard({
 
   const translation = getTranslationText(ayah);
   const maxSurahAyah = getSurahAyahCount(ayah.surahId);
+
+  function computeMenuPos() {
+    const MENU_WIDTH = 224;
+    const ESTIMATED_HEIGHT = 344;
+    const MARGIN = 12;
+    const btn = menuBtnRef.current;
+    if (!btn || typeof window === 'undefined') {
+      return { left: MARGIN, top: 64, maxHeight: 360 };
+    }
+    const rect = btn.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const hasAudioBar = Boolean(currentAyah.value);
+    const bottomSafe = (vw < 1024 ? 68 : MARGIN) + (hasAudioBar ? 64 : 0);
+    const topSafe = 64;
+
+    const rightAlignedLeft = rect.right - MENU_WIDTH;
+    const preferredLeft = rightAlignedLeft >= MARGIN ? rightAlignedLeft : rect.left;
+    const left = Math.max(MARGIN, Math.min(preferredLeft, vw - MENU_WIDTH - MARGIN));
+
+    const spaceBelow = vh - bottomSafe - rect.bottom - 6;
+    const spaceAbove = rect.top - topSafe - 6;
+
+    if (spaceBelow >= ESTIMATED_HEIGHT || spaceBelow >= spaceAbove) {
+      return {
+        left,
+        top: Math.max(topSafe, rect.bottom + 6),
+        maxHeight: Math.max(160, Math.min(420, spaceBelow)),
+      };
+    }
+
+    return {
+      left,
+      bottom: Math.max(bottomSafe, vh - rect.top + 6),
+      maxHeight: Math.max(160, Math.min(420, spaceAbove)),
+    };
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    const onScroll = (e: Event) => {
+      const target = e.target as Node | null;
+      if (target && menuPanelRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    const onResize = () => setMenuPos(computeMenuPos());
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!shareOpen) {
@@ -239,7 +306,7 @@ export function AyahCard({
           )}
         </div>
 
-        <div class="relative flex items-center gap-1">
+        <div class="relative ml-auto flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={() => playAyah(ayah, queue ?? [ayah], surahName)}
@@ -269,8 +336,14 @@ export function AyahCard({
           </button>
 
           <button
+            ref={menuBtnRef}
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
+            onClick={() => {
+              setMenuOpen((prev) => {
+                if (!prev) setMenuPos(computeMenuPos());
+                return !prev;
+              });
+            }}
             aria-label="Aksi lainnya"
             aria-expanded={menuOpen}
             class="inline-flex size-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
@@ -278,10 +351,20 @@ export function AyahCard({
             <MoreVertical class="size-4" />
           </button>
 
-          {menuOpen && (
+          {menuOpen && menuPos && (
             <>
-              <div class="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div class="absolute top-10 right-0 z-40 w-56 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1.5 text-sm text-[var(--popover-foreground)]">
+              <div class="fixed inset-0 z-[50]" onClick={() => setMenuOpen(false)} />
+              <div
+                ref={menuPanelRef}
+                role="menu"
+                style={{
+                  left: `${menuPos.left}px`,
+                  ...(menuPos.top !== undefined ? { top: `${menuPos.top}px` } : {}),
+                  ...(menuPos.bottom !== undefined ? { bottom: `${menuPos.bottom}px` } : {}),
+                  maxHeight: `${menuPos.maxHeight}px`,
+                }}
+                class="fixed z-[55] w-56 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1.5 text-sm text-[var(--popover-foreground)]"
+              >
                 <button
                   type="button"
                   onClick={() => {

@@ -92,11 +92,11 @@ export function ProgressView() {
           <span
             class={`inline-flex items-center gap-1 text-xs tabular-nums ${
               streak > 0
-                ? 'font-semibold text-[var(--gold-ink)] dark:text-[var(--gold)]'
+                ? 'font-semibold text-[var(--primary)]'
                 : 'font-medium text-[var(--muted-foreground)]'
             }`}
           >
-            <Flame class={`size-3.5 ${streak > 0 ? 'text-[var(--gold)]' : 'text-[var(--muted-foreground)]'}`} />
+            <Flame class="size-3.5 text-[var(--primary)]" />
             {streak > 0 ? `${streak} hari beruntun` : 'Belum ada hari beruntun'}
           </span>
         </div>
