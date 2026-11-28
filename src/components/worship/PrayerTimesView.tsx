@@ -9,7 +9,7 @@ import {
 } from '@/lib/worship/prayer-times';
 import { formatHijriDate, getRamadanStatus, HIJRI_OFFSETS } from '@/lib/worship/hijri';
 import { setHijriOffset, userLocation } from '@/stores/location';
-import { Badge, Button, Card, PageHeader } from '@/components/ui/Primitives';
+import { Button, Card, PageHeader } from '@/components/ui/Primitives';
 import { LocationBar } from './LocationBar';
 
 const PRAYER_META: Array<{ key: PrayerName; label: string; icon: typeof Sun }> = [
@@ -112,7 +112,7 @@ export function PrayerTimesView() {
 
       {/* Today's 7 Times */}
       <Card class="p-5">
-        <div class="mb-3 flex items-center justify-between">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <h2 class="text-sm font-semibold">Jadwal sholat hari ini</h2>
           <span class="text-xs text-[var(--muted-foreground)]">
             {new Intl.DateTimeFormat('id-ID', { dateStyle: 'full' }).format(now)}
@@ -125,22 +125,30 @@ export function PrayerTimesView() {
             return (
               <div
                 key={item.key}
-                class={`flex items-center justify-between rounded-xl border px-3.5 py-3 ${
+                class={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 ${
                   isNext
                     ? 'border-[var(--primary)] bg-[var(--accent)] text-[var(--accent-foreground)]'
                     : 'border-[var(--border)] bg-[var(--background)]'
                 }`}
               >
-                <span class="flex items-center gap-2 text-sm font-medium">
-                  <Icon class={`size-4 ${isNext ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]'}`} />
-                  {item.label}
-                </span>
-                <div class="flex items-center gap-1.5">
-                  {isNext && <Badge variant="primary">Berikutnya</Badge>}
-                  <span class="text-sm font-bold tabular-nums">
-                    {formatPrayerClock(today[item.key], loc.timezone)}
-                  </span>
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <Icon
+                    class={`size-4 shrink-0 ${
+                      isNext ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]'
+                    }`}
+                  />
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-medium leading-tight">{item.label}</p>
+                    {isNext && (
+                      <span class="mt-1 inline-block rounded bg-[var(--primary)]/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[var(--primary)]">
+                        Berikutnya
+                      </span>
+                    )}
+                  </div>
                 </div>
+                <span class="shrink-0 text-sm font-bold tabular-nums">
+                  {formatPrayerClock(today[item.key], loc.timezone)}
+                </span>
               </div>
             );
           })}

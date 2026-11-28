@@ -234,8 +234,8 @@ export function DashboardView() {
               <span>Sholat berikutnya</span>
               <Clock class="size-4 text-[var(--primary)]" />
             </div>
-            <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              {PRAYER_LABELS[nextPrayer.name]}{' '}
+            <p class="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-2xl font-bold tabular-nums text-[var(--foreground)]">
+              <span>{PRAYER_LABELS[nextPrayer.name]}</span>
               <span class="text-base font-semibold text-[var(--primary)]">
                 {formatPrayerClock(nextPrayer.time, loc.timezone)}
               </span>
