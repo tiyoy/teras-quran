@@ -1,16 +1,31 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { LocateFixed, MapPin, Search } from 'lucide-preact';
-import { INDONESIAN_CITIES } from '@/data/cities-id';
-import { setCityLocation, setGpsLocation, userLocation } from '@/stores/location';
+import { DEFAULT_CITY, INDONESIAN_CITIES } from '@/data/cities-id';
+import { setCityLocation, setGpsLocation, userLocation, type SavedLocation } from '@/stores/location';
 import { showToast } from '@/stores/toast';
 import { Button, Card, Modal } from '@/components/ui/Primitives';
+
+const SSR_LOCATION: SavedLocation = {
+  name: DEFAULT_CITY.name,
+  province: DEFAULT_CITY.province,
+  lat: DEFAULT_CITY.lat,
+  lng: DEFAULT_CITY.lng,
+  timezone: DEFAULT_CITY.timezone,
+  source: 'city',
+  hijriOffset: 0,
+};
 
 export function LocationBar() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [locating, setLocating] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const loc = userLocation.value;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const loc = mounted ? userLocation.value : SSR_LOCATION;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

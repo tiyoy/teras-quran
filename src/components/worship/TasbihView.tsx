@@ -14,8 +14,8 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-preact';
-import { BADA_SHOLAT_STEPS, QUICK_TARGETS, type TasbihPreset } from '@/data/tasbih-presets';
-import { computeProgressPercent } from '@/lib/tasbih/tasbih-logic';
+import { BADA_SHOLAT_STEPS, DEFAULT_TASBIH_PRESETS, QUICK_TARGETS, type TasbihPreset } from '@/data/tasbih-presets';
+import { computeProgressPercent, createBadaSholatState } from '@/lib/tasbih/tasbih-logic';
 import { addDaysToDateKey, formatDateKey } from '@/lib/quran/meta';
 import {
   activeTasbihCounter,
@@ -42,6 +42,7 @@ const RING_RADIUS = 104;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 export function TasbihView() {
+  const [mounted, setMounted] = useState(false);
   const [pulse, setPulse] = useState(false);
   const [customTargetInput, setCustomTargetInput] = useState('');
   const [resetOpen, setResetOpen] = useState(false);
@@ -54,10 +55,23 @@ export function TasbihView() {
   const [formTarget, setFormTarget] = useState('33');
   const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
 
-  const st = tasbihState.value;
-  const prefs = tasbihPrefs.value;
-  const preset = activeTasbihPreset.value;
-  const counter = activeTasbihCounter.value;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const st = mounted
+    ? tasbihState.value
+    : {
+        mode: 'single' as const,
+        activePresetId: DEFAULT_TASBIH_PRESETS[0].id,
+        counters: {},
+        badaSholat: createBadaSholatState(),
+      };
+  const prefs = mounted
+    ? tasbihPrefs.value
+    : { soundEnabled: true, hapticEnabled: true, autoNextRound: true, wakeLockEnabled: false };
+  const preset = mounted ? activeTasbihPreset.value : DEFAULT_TASBIH_PRESETS[0];
+  const counter = mounted ? activeTasbihCounter.value : { count: 0, rounds: 0, sessionTotal: 0 };
   const isSequence = st.mode === 'bada-sholat';
   const seqState = st.badaSholat;
   const currentSeqStep = BADA_SHOLAT_STEPS[seqState.stepIndex] ?? BADA_SHOLAT_STEPS[0];
@@ -132,15 +146,20 @@ export function TasbihView() {
     setFormOpen(true);
   }
 
-  const todayKey = formatDateKey();
-  const last7Logs = Array.from({ length: 7 }, (_, i) => {
-    const key = addDaysToDateKey(todayKey, i - 6);
-    const [y, m, d] = key.split('-').map(Number);
-    const label = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(
-      new Date(y, m - 1, d)
-    );
-    return { key, label, count: tasbihLogs.value[key]?.totalCount ?? 0 };
-  });
+  const todayKey = mounted ? formatDateKey() : '';
+  const last7Logs = mounted
+    ? Array.from({ length: 7 }, (_, i) => {
+        const key = addDaysToDateKey(todayKey, i - 6);
+        const [y, m, d] = key.split('-').map(Number);
+        const label = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(
+          new Date(y, m - 1, d)
+        );
+        return { key, label, count: tasbihLogs.value[key]?.totalCount ?? 0 };
+      })
+    : Array.from({ length: 7 }, (_, i) => ({ key: `slot-${i}`, label: '—', count: 0 }));
+  const todayTotal = mounted ? todayTasbihCount.value : 0;
+  const allTimeTotal = mounted ? allTimeTasbihCount.value : 0;
+  const presetList = mounted ? tasbihPresets.value : DEFAULT_TASBIH_PRESETS;
 
   return (
     <div class="space-y-6">
@@ -423,13 +442,13 @@ export function TasbihView() {
             <Card class="p-4">
               <p class="text-xs text-[var(--muted-foreground)]">Dzikir hari ini</p>
               <p class="mt-1 text-2xl font-bold tabular-nums text-[var(--primary)]">
-                {todayTasbihCount.value.toLocaleString('id-ID')}
+                {todayTotal.toLocaleString('id-ID')}
               </p>
             </Card>
             <Card class="p-4">
               <p class="text-xs text-[var(--muted-foreground)]">Total tercatat</p>
               <p class="mt-1 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-                {allTimeTasbihCount.value.toLocaleString('id-ID')}
+                {allTimeTotal.toLocaleString('id-ID')}
               </p>
             </Card>
           </div>
@@ -448,7 +467,7 @@ export function TasbihView() {
             </div>
 
             <div class="max-h-80 space-y-1.5 overflow-y-auto pr-1">
-              {tasbihPresets.value.map((p) => {
+              {presetList.map((p) => {
                 const isSelected = !isSequence && preset.id === p.id;
                 const c = st.counters[p.id];
                 return (
@@ -506,9 +525,9 @@ export function TasbihView() {
               Riwayat 7 hari terakhir
             </h3>
             <div class="grid grid-cols-7 gap-1.5 text-center">
-              {last7Logs.map((d) => (
+              {last7Logs.map((d, idx) => (
                 <div
-                  key={d.key}
+                  key={idx}
                   class="rounded-lg border border-[var(--border)] bg-[var(--background)] py-2"
                 >
                   <p class="text-[10px] text-[var(--muted-foreground)]">{d.label}</p>

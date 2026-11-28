@@ -1,13 +1,19 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { Languages } from 'lucide-preact';
 import { applyDomLocale, locale, setLocale } from '@/stores/locale';
 
 export function LocaleToggle() {
-  const cur = locale.value;
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    applyDomLocale(locale.value);
-  }, [cur]);
+    setMounted(true);
+  }, []);
+
+  const cur = mounted ? locale.value : 'id';
+
+  useEffect(() => {
+    if (mounted) applyDomLocale(cur);
+  }, [mounted, cur]);
 
   return (
     <button

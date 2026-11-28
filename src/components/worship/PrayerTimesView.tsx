@@ -8,9 +8,20 @@ import {
   type PrayerName,
 } from '@/lib/worship/prayer-times';
 import { formatHijriDate, getRamadanStatus, HIJRI_OFFSETS } from '@/lib/worship/hijri';
-import { setHijriOffset, userLocation } from '@/stores/location';
+import { DEFAULT_CITY } from '@/data/cities-id';
+import { setHijriOffset, userLocation, type SavedLocation } from '@/stores/location';
 import { Button, Card, PageHeader } from '@/components/ui/Primitives';
 import { LocationBar } from './LocationBar';
+
+const SSR_LOCATION: SavedLocation = {
+  name: DEFAULT_CITY.name,
+  province: DEFAULT_CITY.province,
+  lat: DEFAULT_CITY.lat,
+  lng: DEFAULT_CITY.lng,
+  timezone: DEFAULT_CITY.timezone,
+  source: 'city',
+  hijriOffset: 0,
+};
 
 const PRAYER_META: Array<{ key: PrayerName; label: string; icon: typeof Sun }> = [
   { key: 'imsak', label: 'Imsak', icon: Moon },
@@ -36,24 +47,29 @@ function formatCountdown(ms: number): string {
 
 export function PrayerTimesView() {
   const [now, setNow] = useState(() => new Date());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const id = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(id);
   }, []);
 
-  const loc = userLocation.value;
-  const today = useMemo(() => computeDailyPrayerTimes(now, loc.lat, loc.lng), [now.toDateString(), loc.lat, loc.lng]);
-  const next = getNextPrayer(now, loc.lat, loc.lng);
+  const loc = mounted ? userLocation.value : SSR_LOCATION;
+  const today = useMemo(
+    () => (mounted ? computeDailyPrayerTimes(now, loc.lat, loc.lng) : null),
+    [mounted, now.toDateString(), loc.lat, loc.lng]
+  );
+  const next = mounted ? getNextPrayer(now, loc.lat, loc.lng) : null;
   const monthRows = useMemo(
-    () => computeMonthlyPrayerTimes(now.getFullYear(), now.getMonth(), loc.lat, loc.lng),
-    [now.getFullYear(), now.getMonth(), loc.lat, loc.lng]
+    () => (mounted ? computeMonthlyPrayerTimes(now.getFullYear(), now.getMonth(), loc.lat, loc.lng) : []),
+    [mounted, now.getFullYear(), now.getMonth(), loc.lat, loc.lng]
   );
 
-  const hijriToday = formatHijriDate(now, loc.hijriOffset, 'id', loc.timezone, 'long');
-  const ramadan = getRamadanStatus(now, loc.hijriOffset, loc.timezone);
-  const nextLabel = PRAYER_META.find((p) => p.key === next.name)?.label ?? next.name;
-  const todayNum = now.getDate();
+  const hijriToday = mounted ? formatHijriDate(now, loc.hijriOffset, 'id', loc.timezone, 'long') : '—';
+  const ramadan = mounted ? getRamadanStatus(now, loc.hijriOffset, loc.timezone) : null;
+  const nextLabel = next ? (PRAYER_META.find((p) => p.key === next.name)?.label ?? next.name) : '—';
+  const todayNum = mounted ? now.getDate() : -1;
 
   return (
     <div class="space-y-5">
@@ -74,10 +90,12 @@ export function PrayerTimesView() {
             <Clock class="size-4 text-[var(--primary)]" />
           </div>
           <p class="mt-2 text-3xl font-bold tracking-tight tabular-nums">
-            {nextLabel} · {formatPrayerClock(next.time, loc.timezone)}
+            {next ? `${nextLabel} · ${formatPrayerClock(next.time, loc.timezone)}` : '— · --:--'}
           </p>
           <p class="mt-1 text-xs text-[var(--muted-foreground)]">
-            {next.isTomorrow ? `${nextLabel} besok, ` : ''}dalam {formatCountdown(next.diffMs)}
+            {next
+              ? `${next.isTomorrow ? `${nextLabel} besok, ` : ''}dalam ${formatCountdown(next.diffMs)}`
+              : 'Menghitung jadwal sholat…'}
           </p>
         </Card>
 
@@ -117,13 +135,13 @@ export function PrayerTimesView() {
         <div class="mb-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <h2 class="text-sm font-semibold">Jadwal sholat hari ini</h2>
           <span class="text-xs text-[var(--muted-foreground)]">
-            {new Intl.DateTimeFormat('id-ID', { dateStyle: 'full' }).format(now)}
+            {mounted ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'full' }).format(now) : '—'}
           </span>
         </div>
         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {PRAYER_META.map((item) => {
             const Icon = item.icon;
-            const isNext = !next.isTomorrow && next.name === item.key;
+            const isNext = Boolean(next && !next.isTomorrow && next.name === item.key);
             return (
               <div
                 key={item.key}
@@ -149,7 +167,7 @@ export function PrayerTimesView() {
                   </div>
                 </div>
                 <span class="shrink-0 text-sm font-bold tabular-nums">
-                  {formatPrayerClock(today[item.key], loc.timezone)}
+                  {today ? formatPrayerClock(today[item.key], loc.timezone) : '--:--'}
                 </span>
               </div>
             );
@@ -162,7 +180,7 @@ export function PrayerTimesView() {
         <div class="border-b border-[var(--border)] px-5 py-4">
           <h2 class="text-sm font-semibold">
             Jadwal bulan{' '}
-            {new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(now)}
+            {mounted ? new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(now) : 'ini'}
           </h2>
         </div>
         <div class="overflow-x-auto">

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@fontsource-variable/plus-jakarta-sans";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @font-face {
   font-family: "LPMQ";

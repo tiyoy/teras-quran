@@ -35,30 +35,41 @@ export function ProgressView() {
 
   const authGate = useAuthGate();
   const loggedIn = authGate === 'authenticated';
-  const today = todayLog.value;
-  const targetAyahs = todayTargetAyahs.value;
-  const lr = lastRead.value;
+  const today = mounted
+    ? todayLog.value
+    : { date: '', ayahIds: [] as number[], ayahCount: 0, goalMet: false, updatedAt: 0 };
+  const targetAyahs = mounted ? todayTargetAyahs.value : 0;
+  const lr = mounted ? lastRead.value : null;
   const juzCov = khatamJuzProgress.value;
   const khatam = activeKhatam.value;
-  const streak = currentStreak.value;
-  const bestStreak = longestStreak.value;
+  const streak = mounted ? currentStreak.value : 0;
+  const bestStreak = mounted ? longestStreak.value : 0;
 
-  const todayKey = formatDateKey();
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const key = addDaysToDateKey(todayKey, i - 6);
-    const [y, m, d] = key.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    const short = DAY_SHORT_ID[dt.getDay()];
-    const log = readingDays.value[key];
-    return {
-      key,
-      dayNum: d,
-      short,
-      count: log?.ayahCount ?? 0,
-      met: log?.goalMet ?? false,
-      isToday: i === 6,
-    };
-  });
+  const todayKey = mounted ? formatDateKey() : '';
+  const weekDays = mounted
+    ? Array.from({ length: 7 }, (_, i) => {
+        const key = addDaysToDateKey(todayKey, i - 6);
+        const [y, m, d] = key.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        const short = DAY_SHORT_ID[dt.getDay()];
+        const log = readingDays.value[key];
+        return {
+          key,
+          dayNum: String(d),
+          short,
+          count: log?.ayahCount ?? 0,
+          met: log?.goalMet ?? false,
+          isToday: i === 6,
+        };
+      })
+    : Array.from({ length: 7 }, (_, i) => ({
+        key: `slot-${i}`,
+        dayNum: '—',
+        short: '—',
+        count: 0,
+        met: false,
+        isToday: i === 6,
+      }));
 
   const history30 = mounted
     ? Object.values(readingDays.value)
@@ -128,7 +139,7 @@ export function ProgressView() {
               }}
             >
               <Target class="size-3.5" />
-              {readingGoal.value ? 'Ubah target' : 'Atur target'}
+              {mounted && readingGoal.value ? 'Ubah target' : 'Atur target'}
             </Button>
           </div>
 
@@ -158,8 +169,8 @@ export function ProgressView() {
           )}
         </div>
         <div class="grid grid-cols-7 gap-2 text-center">
-          {weekDays.map((d) => (
-            <div key={d.key} class="flex flex-col items-center gap-1.5">
+          {weekDays.map((d, idx) => (
+            <div key={idx} class="flex flex-col items-center gap-1.5">
               <span class="text-[11px] text-[var(--muted-foreground)]">{d.short}</span>
               <div
                 title={`${d.key}: ${d.count} ayat`}

@@ -29,11 +29,22 @@ import { authUser, initAuthListener, userProfile } from '@/stores/auth';
 import { favorites, isFavoriteAyah, lastRead, notes, savedSurahs, toggleFavoriteAyah } from '@/stores/library';
 import { currentStreak, longestStreak, readingDays, todayLog, todayTargetAyahs } from '@/stores/progress';
 import { dueHifzItems, hifzTotals } from '@/stores/hifz';
-import { userLocation } from '@/stores/location';
+import { DEFAULT_CITY } from '@/data/cities-id';
+import { userLocation, type SavedLocation } from '@/stores/location';
 import { activeTasbihCounter, activeTasbihPreset, todayTasbihCount } from '@/stores/tasbih';
 import { playAyah } from '@/stores/audio-player';
 import { getTranslationText } from '@/stores/reader-settings';
 import { Badge, Button, Card } from '@/components/ui/Primitives';
+
+const SSR_LOCATION: SavedLocation = {
+  name: DEFAULT_CITY.name,
+  province: DEFAULT_CITY.province,
+  lat: DEFAULT_CITY.lat,
+  lng: DEFAULT_CITY.lng,
+  timezone: DEFAULT_CITY.timezone,
+  source: 'city',
+  hijriOffset: 0,
+};
 
 const PRAYER_LABELS: Record<PrayerName, string> = {
   imsak: 'Imsak',
@@ -88,19 +99,44 @@ export function DashboardView() {
   const lrSurah = lr ? surahs.find((s) => s.id === lr.surahId) : null;
   const dailySurah = dailyAyah ? surahs.find((s) => s.id === dailyAyah.surahId) : null;
 
-  const loc = userLocation.value;
-  const nextPrayer = getNextPrayer(now, loc.lat, loc.lng);
+  const loc = mounted ? userLocation.value : SSR_LOCATION;
+  const nextPrayer = mounted ? getNextPrayer(now, loc.lat, loc.lng) : null;
+
+  // Hydration-safe personal stats (match SSR on first pass, populate on mount)
+  const todayCount = mounted ? todayLog.value.ayahCount : 0;
+  const todayGoalMet = mounted ? todayLog.value.goalMet : false;
+  const targetAyahs = mounted ? todayTargetAyahs.value : 0;
+  const streakVal = mounted ? currentStreak.value : 0;
+  const bestStreakVal = mounted ? longestStreak.value : 0;
+  const dueHifzCount = mounted ? dueHifzItems.value.length : 0;
+  const hifzAyahTotal = mounted ? hifzTotals.value.ayahs : 0;
+  const favCount = mounted ? favorites.value.length : 0;
+  const notesCount = mounted ? notes.value.length : 0;
+  const savedSurahsCount = mounted ? savedSurahs.value.length : 0;
+  const tasbihToday = mounted ? todayTasbihCount.value : 0;
+  const tasbihPreset = mounted
+    ? activeTasbihPreset.value
+    : { id: 'subhanallah', title: 'Subhanallah', arabic: 'سُبْحَانَ اللّٰهِ', target: 33 };
+  const tasbihCount = mounted ? activeTasbihCounter.value.count : 0;
 
   // 7-day reading chart data
-  const todayKey = formatDateKey(now);
-  const last7 = Array.from({ length: 7 }, (_, i) => {
-    const key = addDaysToDateKey(todayKey, i - 6);
-    const [y, m, d] = key.split('-').map(Number);
-    const dt = new Date(y, m - 1, d);
-    const dayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(dt);
-    const log = readingDays.value[key];
-    return { key, dayLabel, count: log?.ayahCount ?? 0, met: log?.goalMet ?? false, isToday: i === 6 };
-  });
+  const todayKey = mounted ? formatDateKey(now) : '';
+  const last7 = mounted
+    ? Array.from({ length: 7 }, (_, i) => {
+        const key = addDaysToDateKey(todayKey, i - 6);
+        const [y, m, d] = key.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        const dayLabel = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(dt);
+        const log = readingDays.value[key];
+        return { key, dayLabel, count: log?.ayahCount ?? 0, met: log?.goalMet ?? false, isToday: i === 6 };
+      })
+    : Array.from({ length: 7 }, (_, i) => ({
+        key: `slot-${i}`,
+        dayLabel: '—',
+        count: 0,
+        met: false,
+        isToday: i === 6,
+      }));
   const max7 = Math.max(10, ...last7.map((d) => d.count));
   const sum7 = last7.reduce((acc, d) => acc + d.count, 0);
 
@@ -109,7 +145,7 @@ export function DashboardView() {
       {/* Header Greeting */}
       <div>
         <h1 class="text-2xl font-bold tracking-tight">
-          {getGreeting()}
+          {mounted ? getGreeting() : 'Assalamu\u2019alaikum'}
           {name ? `, ${name}` : ''}
         </h1>
         <p class="mt-0.5 text-sm text-[var(--muted-foreground)]">
@@ -166,16 +202,16 @@ export function DashboardView() {
               <TrendingUp class="size-4 text-[var(--primary)]" />
             </div>
             <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              {todayLog.value.ayahCount}
+              {todayCount}
               <span class="ml-1 text-xs font-normal text-[var(--muted-foreground)]">
-                {todayTargetAyahs.value > 0 ? `/ ${todayTargetAyahs.value} ayat` : 'ayat'}
+                {targetAyahs > 0 ? `/ ${targetAyahs} ayat` : 'ayat'}
               </span>
             </p>
             <p class="mt-1 text-xs text-[var(--muted-foreground)]">
-              {todayLog.value.goalMet
+              {todayGoalMet
                 ? 'Target hari ini tercapai'
-                : todayTargetAyahs.value > 0
-                  ? `${Math.max(0, todayTargetAyahs.value - todayLog.value.ayahCount)} ayat lagi`
+                : targetAyahs > 0
+                  ? `${Math.max(0, targetAyahs - todayCount)} ayat lagi`
                   : 'Belum ada target harian'}
             </p>
           </Card>
@@ -188,11 +224,11 @@ export function DashboardView() {
               <Flame class="size-4 text-[var(--gold)]" />
             </div>
             <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              {currentStreak.value}
+              {streakVal}
               <span class="ml-1 text-xs font-normal text-[var(--muted-foreground)]">hari</span>
             </p>
             <p class="mt-1 text-xs text-[var(--muted-foreground)]">
-              Terpanjang {longestStreak.value} hari
+              Terpanjang {bestStreakVal} hari
             </p>
           </Card>
         </a>
@@ -200,19 +236,19 @@ export function DashboardView() {
         <a href="/app/hafalan" class="no-underline">
           <Card class="h-full p-4 transition-colors hover:border-[var(--primary)]">
             <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-              <span>{dueHifzItems.value.length > 0 ? 'Murajaah hari ini' : 'Hafalan'}</span>
+              <span>{dueHifzCount > 0 ? 'Murajaah hari ini' : 'Hafalan'}</span>
               <BookHeart class="size-4 text-[var(--primary)]" />
             </div>
             <p class="mt-2 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              {dueHifzItems.value.length > 0 ? dueHifzItems.value.length : hifzTotals.value.ayahs}
+              {dueHifzCount > 0 ? dueHifzCount : hifzAyahTotal}
               <span class="ml-1 text-xs font-normal text-[var(--muted-foreground)]">
-                {dueHifzItems.value.length > 0 ? 'jatuh tempo' : 'ayat dihafal'}
+                {dueHifzCount > 0 ? 'jatuh tempo' : 'ayat dihafal'}
               </span>
             </p>
             <p class="mt-1 text-xs text-[var(--muted-foreground)]">
-              {dueHifzItems.value.length > 0
+              {dueHifzCount > 0
                 ? 'Siap diulang hari ini'
-                : hifzTotals.value.ayahs > 0
+                : hifzAyahTotal > 0
                   ? 'Tidak ada murajaah hari ini'
                   : 'Tandai ayat yang dihafal'}
             </p>
@@ -226,13 +262,13 @@ export function DashboardView() {
               <Clock class="size-4 text-[var(--primary)]" />
             </div>
             <p class="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-2xl font-bold tabular-nums text-[var(--foreground)]">
-              <span>{PRAYER_LABELS[nextPrayer.name]}</span>
+              <span>{nextPrayer ? PRAYER_LABELS[nextPrayer.name] : '—'}</span>
               <span class="text-base font-semibold text-[var(--primary)]">
-                {formatPrayerClock(nextPrayer.time, loc.timezone)}
+                {nextPrayer ? formatPrayerClock(nextPrayer.time, loc.timezone) : '--:--'}
               </span>
             </p>
             <p class="mt-1 truncate text-xs text-[var(--muted-foreground)]">
-              dalam {formatCountdown(nextPrayer.diffMs)} · {loc.name}
+              {nextPrayer ? `dalam ${formatCountdown(nextPrayer.diffMs)} · ${loc.name}` : loc.name}
             </p>
           </Card>
         </a>
@@ -253,10 +289,10 @@ export function DashboardView() {
             </a>
           </div>
           <div class="grid h-28 grid-cols-7 items-end gap-2">
-            {last7.map((d) => {
+            {last7.map((d, idx) => {
               const pct = Math.max(8, Math.round((d.count / max7) * 100));
               return (
-                <div key={d.key} class="flex h-full flex-col items-center justify-end gap-1.5">
+                <div key={idx} class="flex h-full flex-col items-center justify-end gap-1.5">
                   <div class="flex w-full flex-1 items-end">
                     <div
                       title={`${d.dayLabel}: ${d.count} ayat`}
@@ -293,20 +329,20 @@ export function DashboardView() {
                 Tasbih Digital
               </Badge>
               <span class="text-xs text-[var(--muted-foreground)] tabular-nums">
-                Hari ini: {todayTasbihCount.value}×
+                Hari ini: {tasbihToday}×
               </span>
             </div>
             <p class="mt-3 text-base font-bold text-[var(--foreground)]">
-              {activeTasbihPreset.value.title}
+              {tasbihPreset.title}
             </p>
-            {activeTasbihPreset.value.arabic && (
+            {tasbihPreset.arabic && (
               <p class="quran-text mt-1 text-right text-xl text-[var(--primary)]" dir="rtl" lang="ar">
-                {activeTasbihPreset.value.arabic}
+                {tasbihPreset.arabic}
               </p>
             )}
             <p class="mt-1 text-xs text-[var(--muted-foreground)] tabular-nums">
-              Hitungan aktif: {activeTasbihCounter.value.count}
-              {activeTasbihPreset.value.target > 0 ? ` / ${activeTasbihPreset.value.target}` : ' (tanpa batas)'}
+              Hitungan aktif: {tasbihCount}
+              {tasbihPreset.target > 0 ? ` / ${tasbihPreset.target}` : ' (tanpa batas)'}
             </p>
           </div>
           <Button href="/app/tasbih" size="sm" variant="secondary" class="mt-4 w-full">
@@ -375,7 +411,7 @@ export function DashboardView() {
                 <Heart class="size-4 text-[var(--primary)]" /> Favorit
               </span>
               <span class="font-semibold tabular-nums text-[var(--muted-foreground)]">
-                {favorites.value.length}
+                {favCount}
               </span>
             </a>
             <a
@@ -386,7 +422,7 @@ export function DashboardView() {
                 <NotebookPen class="size-4 text-[var(--primary)]" /> Catatan
               </span>
               <span class="font-semibold tabular-nums text-[var(--muted-foreground)]">
-                {notes.value.length}
+                {notesCount}
               </span>
             </a>
             <a
@@ -397,7 +433,7 @@ export function DashboardView() {
                 <Star class="size-4 text-[var(--gold)]" /> Surah pilihan
               </span>
               <span class="font-semibold tabular-nums text-[var(--muted-foreground)]">
-                {savedSurahs.value.length}
+                {savedSurahsCount}
               </span>
             </a>
             <a
@@ -408,7 +444,7 @@ export function DashboardView() {
                 <BookHeart class="size-4 text-[var(--primary)]" /> Hafalan
               </span>
               <span class="font-semibold tabular-nums text-[var(--muted-foreground)]">
-                {hifzTotals.value.ayahs}
+                {hifzAyahTotal}
               </span>
             </a>
           </div>

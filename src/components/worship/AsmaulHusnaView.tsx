@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Quote, Search, SearchX, X } from 'lucide-preact';
 import { ASMAUL_HUSNA } from '@/data/asmaul-husna';
 import { locale } from '@/stores/locale';
@@ -7,7 +7,13 @@ import { Button, Card, EmptyState, PageHeader } from '@/components/ui/Primitives
 
 export function AsmaulHusnaView() {
   const [query, setQuery] = useState('');
-  const lang = locale.value;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const lang = mounted ? locale.value : 'id';
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

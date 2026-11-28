@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import {
   ArrowRight,
   BookOpen,
@@ -299,12 +299,18 @@ const PILLAR_ICONS = [BookOpen, TrendingUp, CircleDot] as const;
 const MORE_ICONS = [Headphones, NotebookPen, Users, Clock, Smartphone, ShieldCheck] as const;
 
 export function LandingContent() {
-  const lang = locale.value;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const lang = mounted ? locale.value : 'id';
   const c = COPY[lang];
 
   useEffect(() => {
-    document.title = c.pageTitle;
-  }, [c.pageTitle]);
+    if (mounted) document.title = c.pageTitle;
+  }, [mounted, c.pageTitle]);
 
   return (
     <div class="mx-auto w-full max-w-5xl overflow-x-clip border-x border-[var(--border)] bg-[var(--background)]">

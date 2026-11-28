@@ -6,12 +6,29 @@ import {
   extractCompassHeading,
   shortestAngleDelta,
 } from '@/lib/worship/qibla';
-import { userLocation } from '@/stores/location';
+import { DEFAULT_CITY } from '@/data/cities-id';
+import { userLocation, type SavedLocation } from '@/stores/location';
 import { Badge, Button, Card, PageHeader } from '@/components/ui/Primitives';
 import { LocationBar } from './LocationBar';
 
+const SSR_LOCATION: SavedLocation = {
+  name: DEFAULT_CITY.name,
+  province: DEFAULT_CITY.province,
+  lat: DEFAULT_CITY.lat,
+  lng: DEFAULT_CITY.lng,
+  timezone: DEFAULT_CITY.timezone,
+  source: 'city',
+  hijriOffset: 0,
+};
+
 export function QiblaView() {
-  const loc = userLocation.value;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const loc = mounted ? userLocation.value : SSR_LOCATION;
   const bearing = computeQiblaBearing(loc.lat, loc.lng);
   const distanceKm = Math.round(computeKaabaDistanceKm(loc.lat, loc.lng));
 
