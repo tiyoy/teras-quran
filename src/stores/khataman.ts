@@ -107,7 +107,7 @@ export function subscribeKhatamanGroup(
     );
   }
   cb(myKhatamanGroups.value.find((g) => g.id === groupId) ?? null);
-  return () => {};
+  return () => { };
 }
 
 async function mutateGroup(
@@ -212,12 +212,12 @@ export async function leaveKhatamanGroup(groupId: string): Promise<void> {
       }
     }
     return { ...g, slots: nextSlots };
-  }).catch(() => {});
+  }).catch(() => { });
 
   const db = getFirebaseDb();
   if (db && currentUid.value) {
-    await deleteDoc(doc(db, 'khataman', groupId, 'participants', actor.uid)).catch(() => {});
-    await deleteDoc(doc(db, 'users', actor.uid, 'khataman_groups', groupId)).catch(() => {});
+    await deleteDoc(doc(db, 'khataman', groupId, 'participants', actor.uid)).catch(() => { });
+    await deleteDoc(doc(db, 'users', actor.uid, 'khataman_groups', groupId)).catch(() => { });
   }
   saveLocalGroups(myKhatamanGroups.value.filter((g) => g.id !== groupId));
   showToast('Kamu sudah keluar dari khataman.');
@@ -230,7 +230,7 @@ export function clearLocalKhataman(): void {
 
 export function bindKhatamanListSync(uid: string | null): () => void {
   const db = getFirebaseDb();
-  if (!db || !uid) return () => {};
+  if (!db || !uid) return () => { };
   return onSnapshot(
     collection(db, 'users', uid, 'khataman_groups'),
     async (snap) => {
@@ -241,6 +241,6 @@ export function bindKhatamanListSync(uid: string | null): () => void {
       }
       if (loaded.length) saveLocalGroups(loaded);
     },
-    () => {}
+    () => { }
   );
 }
