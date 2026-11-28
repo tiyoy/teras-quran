@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'preact/hooks';
-import { BookOpen, CheckCircle2, Play, RefreshCw, XCircle } from 'lucide-preact';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { BookOpen, CheckCircle2, Play, RefreshCw, ShieldCheck, XCircle } from 'lucide-preact';
 import { TAJWID_RULE_MAP, TAJWID_RULES } from '@/data/tajwid-rules';
 import {
+  fetchQuranMeta,
   fetchSurahAyahs,
   fetchSurahTajwid,
   type Ayah,
@@ -11,31 +12,46 @@ import {
   type TajwidGroup,
   type TajwidSegment,
 } from '@/lib/quran/tajwid-parser';
+import {
+  buildTajwidQuestion,
+  evaluateTajwidAnswer,
+  getQuestionKey,
+  getSegmentQuizClassName,
+  shouldInvalidateQuestionOnLearnTab,
+  shouldShowQuestionSource,
+  TAJWID_QUIZ_SURAH_POOL,
+  type TajwidQuizQuestion,
+  type TajwidQuizScore,
+} from '@/lib/quran/tajwid-quiz';
 import { playAyah } from '@/stores/audio-player';
+import { showToast } from '@/stores/toast';
 import { Badge, Button, Card, PageHeader } from '@/components/ui/Primitives';
-
-interface QuizQuestion {
-  surahId: number;
-  ayahNumber: number;
-  segments: TajwidSegment[];
-  targetIdx: number;
-  correctGroup: TajwidGroup;
-  options: TajwidGroup[];
-}
 
 export function TajwidView() {
   const [tab, setTab] = useState<'learn' | 'practice'>('learn');
+  const [surahNames, setSurahNames] = useState<Record<number, string>>({});
   const [exampleCache, setExampleCache] = useState<
     Record<string, { ayah: Ayah; segments: TajwidSegment[] }>
   >({});
 
   // Practice quiz state
   const [quizBusy, setQuizBusy] = useState(false);
-  const [question, setQuestion] = useState<QuizQuestion | null>(null);
+  const [question, setQuestion] = useState<TajwidQuizQuestion | null>(null);
   const [picked, setPicked] = useState<TajwidGroup | null>(null);
-  const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [score, setScore] = useState<TajwidQuizScore>({ correct: 0, total: 0 });
+  const lastQuestionKeyRef = useRef<string | null>(null);
+  const invalidatedByLearnTabRef = useRef(false);
+  const lastCopyToastRef = useRef(0);
 
   useEffect(() => {
+    fetchQuranMeta()
+      .then((meta) => {
+        const names: Record<number, string> = {};
+        for (const s of meta.surahs) names[s.id] = s.name;
+        setSurahNames(names);
+      })
+      .catch(() => {});
+
     // Load example ayahs for the 12 rules
     const uniqueSurahs = [...new Set(TAJWID_RULES.flatMap((r) => r.examples.map((e) => e.surahId)))];
     Promise.all(
@@ -61,40 +77,59 @@ export function TajwidView() {
     setQuizBusy(true);
     setPicked(null);
     try {
-      // Pick random surah from Al-Fatihah or Juz Amma (97..114)
-      const poolSurahs = [1, 97, 99, 100, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114];
-      const sid = poolSurahs[Math.floor(Math.random() * poolSurahs.length)];
+      const sid =
+        TAJWID_QUIZ_SURAH_POOL[Math.floor(Math.random() * TAJWID_QUIZ_SURAH_POOL.length)];
       const map = await fetchSurahTajwid(sid);
-      const candidates: Array<{ ayahNumber: number; segments: TajwidSegment[]; targetIdx: number; group: TajwidGroup }> = [];
-
-      for (const [ayahNum, segs] of map.entries()) {
-        segs.forEach(([, grp], idx) => {
-          if (grp && grp !== 'silent') {
-            candidates.push({ ayahNumber: ayahNum, segments: segs, targetIdx: idx, group: grp });
-          }
-        });
-      }
-
-      if (!candidates.length) return;
-      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      const distractors = TAJWID_RULES.map((r) => r.id)
-        .filter((g) => g !== chosen.group && g !== 'silent')
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
-      const options = [chosen.group, ...distractors].sort(() => Math.random() - 0.5);
-
-      setQuestion({
-        surahId: sid,
-        ayahNumber: chosen.ayahNumber,
-        segments: chosen.segments,
-        targetIdx: chosen.targetIdx,
-        correctGroup: chosen.group,
-        options,
-      });
+      const nextQ = buildTajwidQuestion(sid, map, lastQuestionKeyRef.current);
+      if (!nextQ) return;
+      lastQuestionKeyRef.current = getQuestionKey(nextQ);
+      setQuestion(nextQ);
     } finally {
       setQuizBusy(false);
     }
   }
+
+  function handleOpenLearnTab() {
+    if (shouldInvalidateQuestionOnLearnTab(Boolean(question), Boolean(picked))) {
+      invalidatedByLearnTabRef.current = true;
+      setQuestion(null);
+      setPicked(null);
+    }
+    setTab('learn');
+  }
+
+  function handleOpenPracticeTab() {
+    setTab('practice');
+    if (invalidatedByLearnTabRef.current) {
+      invalidatedByLearnTabRef.current = false;
+      showToast('Soal diacak ulang karena materi tajwid sempat dibuka.', { variant: 'info' });
+      void nextQuestion();
+      return;
+    }
+    if (!question) {
+      void nextQuestion();
+    }
+  }
+
+  function handleBlockQuizCopy(e: Event) {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastCopyToastRef.current > 2500) {
+      lastCopyToastRef.current = now;
+      showToast('Menyalin teks dinonaktifkan selama latihan tajwid.');
+    }
+  }
+
+  function handleSelectOption(opt: TajwidGroup) {
+    if (!question) return;
+    const result = evaluateTajwidAnswer(picked, opt, question.correctGroup, score);
+    if (!result.accepted) return;
+    setPicked(result.picked);
+    setScore(result.score);
+  }
+
+  const answered = Boolean(picked);
+  const showSource = shouldShowQuestionSource(answered);
 
   return (
     <div>
@@ -106,7 +141,7 @@ export function TajwidView() {
       <div class="mb-6 inline-flex rounded-xl bg-[var(--muted)] p-1">
         <button
           type="button"
-          onClick={() => setTab('learn')}
+          onClick={handleOpenLearnTab}
           class={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
             tab === 'learn'
               ? 'bg-[var(--card)] text-[var(--foreground)]'
@@ -117,10 +152,7 @@ export function TajwidView() {
         </button>
         <button
           type="button"
-          onClick={() => {
-            setTab('practice');
-            if (!question) nextQuestion();
-          }}
+          onClick={handleOpenPracticeTab}
           class={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
             tab === 'practice'
               ? 'bg-[var(--card)] text-[var(--foreground)]'
@@ -211,39 +243,51 @@ export function TajwidView() {
         </div>
       ) : (
         <Card class="p-6">
-          <div class="mb-4 flex items-center justify-between">
+          <div class="mb-4 flex flex-wrap items-start justify-between gap-2">
             <div>
               <h2 class="text-base font-bold">Tebak hukum tajwid</h2>
               <p class="text-xs text-[var(--muted-foreground)]">
                 Soal diambil acak dari Al-Fatihah dan Juz &lsquo;Amma.
               </p>
             </div>
-            <Badge variant="primary" class="tabular-nums">
-              {score.correct} dari {score.total} benar
-            </Badge>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <Badge>
+                <ShieldCheck class="size-3 text-[var(--primary)]" />
+                Mode latihan adil
+              </Badge>
+              <Badge variant="primary" class="tabular-nums">
+                {score.correct} dari {score.total} benar
+              </Badge>
+            </div>
           </div>
 
           {quizBusy || !question ? (
             <p class="py-12 text-center text-sm text-[var(--muted-foreground)]">Menyiapkan soal…</p>
           ) : (
             <div class="space-y-5">
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5">
+              <div
+                onCopy={handleBlockQuizCopy}
+                onCut={handleBlockQuizCopy}
+                onContextMenu={handleBlockQuizCopy}
+                onDragStart={handleBlockQuizCopy}
+                class="select-none rounded-2xl border border-[var(--border)] bg-[var(--background)] p-5"
+              >
                 <p class="mb-2 text-xs text-[var(--muted-foreground)]">
-                  Hukum apa pada bagian yang ditandai warna &amp; kotak? (QS. {question.surahId}:{question.ayahNumber})
+                  {showSource
+                    ? `QS. ${surahNames[question.surahId] || `Surah ${question.surahId}`}: ${question.ayahNumber} — warna hukum tajwid kini ditampilkan.`
+                    : 'Hukum apa pada bagian yang ditandai kotak?'}
                 </p>
                 <p class="tajwid-text text-right text-3xl text-[var(--foreground)]" dir="rtl" lang="ar">
-                  {question.segments.map(([txt, grp], idx) =>
-                    idx === question.targetIdx && grp ? (
-                      <span
-                        key={idx}
-                        class={`${tajwidClassName(grp)} rounded-md border-2 border-current bg-[var(--card)] px-1.5 py-0.5`}
-                      >
+                  {question.segments.map(([txt, grp], idx) => {
+                    const cls = getSegmentQuizClassName(idx === question.targetIdx, answered, grp);
+                    return cls ? (
+                      <span key={idx} class={cls}>
                         {txt}
                       </span>
                     ) : (
                       <span key={idx}>{txt}</span>
-                    )
-                  )}
+                    );
+                  })}
                 </p>
               </div>
 
@@ -262,14 +306,8 @@ export function TajwidView() {
                     <button
                       key={opt}
                       type="button"
-                      disabled={Boolean(picked)}
-                      onClick={() => {
-                        setPicked(opt);
-                        setScore((s) => ({
-                          correct: s.correct + (opt === question.correctGroup ? 1 : 0),
-                          total: s.total + 1,
-                        }));
-                      }}
+                      disabled={answered}
+                      onClick={() => handleSelectOption(opt)}
                       class={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors cursor-pointer disabled:cursor-default ${cls}`}
                     >
                       <span>{info.name}</span>
@@ -282,14 +320,23 @@ export function TajwidView() {
 
               {picked && (
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-4 text-xs">
-                  <div>
+                  <div class="space-y-0.5">
                     <p class="font-semibold text-[var(--foreground)]">
                       {picked === question.correctGroup
                         ? 'Benar!'
                         : `Belum tepat. Jawabannya: ${TAJWID_RULE_MAP[question.correctGroup].name}.`}
                     </p>
-                    <p class="mt-0.5 text-[var(--muted-foreground)]">
+                    <p class="text-[var(--muted-foreground)]">
                       {TAJWID_RULE_MAP[question.correctGroup].shortDesc}
+                    </p>
+                    <p class="pt-0.5 text-[var(--muted-foreground)]">
+                      Sumber:{' '}
+                      <a
+                        href={`/app/baca/${question.surahId}?ayat=${question.ayahNumber}`}
+                        class="font-semibold text-[var(--primary)] hover:underline"
+                      >
+                        QS. {surahNames[question.surahId] || `Surah ${question.surahId}`}: {question.ayahNumber}
+                      </a>
                     </p>
                   </div>
                   <Button size="sm" onClick={nextQuestion}>
