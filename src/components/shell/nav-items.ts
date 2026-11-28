@@ -15,6 +15,7 @@ import {
   NotebookPen,
   Search,
   Settings,
+  Shuffle,
   Sparkles,
   Speech,
   Star,
@@ -140,8 +141,15 @@ export const MOBILE_NAV_GROUPS: readonly MobileNavGroupDef[] = [
     title: 'Pribadi',
     icon: Bookmark,
     items: [
-      ...NAV_GROUPS[1].items,
-      { href: '/app/cari', label: 'Cari ayat', description: 'Kata atau nomor ayat', icon: Search },
+      ...NAV_GROUPS[1].items.map((item) =>
+        item.href === '/app/hafalan' ? { ...item, matchPrefixes: undefined } : item
+      ),
+      {
+        href: '/app/sambung-ayat',
+        label: 'Sambung ayat',
+        description: 'Latihan tebak lanjutan ayat',
+        icon: Shuffle,
+      },
     ],
   },
   {
