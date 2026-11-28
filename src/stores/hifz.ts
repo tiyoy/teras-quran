@@ -1,5 +1,5 @@
 import { computed, signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import {
   buildBulkImportRanges,
   getHifzStrength,
@@ -71,6 +71,19 @@ export const hifzTotals = computed(() => ({
 let syncedUid: string | null = null;
 let unsub: (() => void) | null = null;
 
+export function readLocalHifzSnapshot(): HifzItem[] {
+  return readStorage<HifzItem[]>(KEY, []);
+}
+
+export function applySyncedHifz(list: HifzItem[]): void {
+  persistLocal(list);
+}
+
+export function clearLocalHifz(): void {
+  removeStorage(KEY);
+  hifzItems.value = [];
+}
+
 export function bindHifzSync(uid: string | null): void {
   if (syncedUid === uid) return;
   unsub?.();
@@ -81,7 +94,7 @@ export function bindHifzSync(uid: string | null): void {
     return;
   }
   unsub = listenUserSubCol<Omit<HifzItem, 'id'>>(uid, 'hafalan', (docs) => {
-    hifzItems.value = docs;
+    persistLocal(docs);
   });
 }
 

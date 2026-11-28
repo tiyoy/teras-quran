@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { getFirebaseDb } from '@/lib/firebase/client';
 import {
   collection,
@@ -221,6 +221,11 @@ export async function leaveKhatamanGroup(groupId: string): Promise<void> {
   }
   saveLocalGroups(myKhatamanGroups.value.filter((g) => g.id !== groupId));
   showToast('Kamu sudah keluar dari khataman.');
+}
+
+export function clearLocalKhataman(): void {
+  removeStorage(LOCAL_KEY);
+  myKhatamanGroups.value = [];
 }
 
 export function bindKhatamanListSync(uid: string | null): () => void {

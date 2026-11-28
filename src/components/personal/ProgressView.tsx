@@ -14,7 +14,7 @@ import {
   todayTargetAyahs,
   type ReadingGoal,
 } from '@/stores/progress';
-import { isAuthenticated } from '@/stores/auth';
+import { useAuthGate } from '@/components/auth/LoginRequired';
 import { lastRead } from '@/stores/library';
 import { addDaysToDateKey, formatDateKey, TOTAL_AYAHS } from '@/lib/quran/meta';
 import { Button, Card, Modal, PageHeader } from '@/components/ui/Primitives';
@@ -28,7 +28,8 @@ export function ProgressView() {
   const [targetDate, setTargetDate] = useState(readingGoal.value?.targetDate ?? '');
   const [confirmNewOpen, setConfirmNewOpen] = useState(false);
 
-  const loggedIn = isAuthenticated.value;
+  const authGate = useAuthGate();
+  const loggedIn = authGate === 'authenticated';
   const today = todayLog.value;
   const targetAyahs = todayTargetAyahs.value;
   const lr = lastRead.value;
@@ -124,11 +125,11 @@ export function ProgressView() {
             </Button>
           </div>
 
-          {!loggedIn && (
+          {authGate === 'guest' && (
             <p class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--muted-foreground)]">
               <span>Progres disimpan di perangkat ini saja. Masuk agar tersimpan di semua perangkat.</span>
               <a
-                href="/auth/login"
+                href="/auth/login?redirect=%2Fapp%2Fprogres"
                 class="inline-flex items-center gap-1 font-semibold text-[var(--primary)] hover:underline no-underline"
               >
                 <LogIn class="size-3.5" />
@@ -172,22 +173,30 @@ export function ProgressView() {
         </div>
       </Card>
 
-      {/* Khatam 30 Juz (Guest prompt vs Authenticated tracker) */}
-      {!loggedIn ? (
-        <Card class="p-5 sm:p-6">
+      {/* Khatam 30 Juz (Hydration-safe loading / Guest prompt / Authenticated tracker) */}
+      {authGate === 'loading' ? (
+        <div
+          key="khatam-loading"
+          role="status"
+          aria-busy="true"
+          aria-label="Memuat khatam…"
+          class="h-36 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--card)]"
+        />
+      ) : !loggedIn ? (
+        <Card key="khatam-guest" class="p-5 sm:p-6">
           <h2 class="text-sm font-semibold">Khatam</h2>
           <p class="mt-2 text-sm text-[var(--muted-foreground)]">
             Masuk untuk melacak khatam dan menyimpannya di semua perangkat.
           </p>
           <div class="mt-3.5">
-            <Button href="/auth/login" size="sm" variant="outline">
+            <Button href="/auth/login?redirect=%2Fapp%2Fprogres" size="sm" variant="outline">
               <LogIn class="size-3.5" />
               Masuk
             </Button>
           </div>
         </Card>
       ) : (
-        <Card class="p-5 sm:p-6">
+        <Card key="khatam-auth" class="p-5 sm:p-6">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-sm font-semibold">Khatam</h2>
             <Button size="sm" variant="outline" onClick={() => setConfirmNewOpen(true)}>

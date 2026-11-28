@@ -264,7 +264,7 @@ export function RegisterForm() {
     setBusy(true);
     try {
       await loginWithGoogle();
-      window.location.href = '/app';
+      window.location.href = getSafeRedirect();
     } catch (err) {
       setError(mapAuthError(err));
     } finally {

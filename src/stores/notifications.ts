@@ -1,5 +1,5 @@
 import { computed, signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { getFirebaseDb } from '@/lib/firebase/client';
 import { collection, doc, onSnapshot, query, setDoc, where } from '@/lib/firebase/firestore';
 import { currentUid } from './auth';
@@ -73,6 +73,11 @@ export function markAllNotificationsRead(): void {
   }
 }
 
+export function clearLocalNotifications(): void {
+  removeStorage(KEY);
+  notifications.value = [];
+}
+
 export function bindNotificationsSync(uid: string | null): () => void {
   const db = getFirebaseDb();
   if (!db || !uid) return () => {};
@@ -81,9 +86,11 @@ export function bindNotificationsSync(uid: string | null): () => void {
     q,
     (snap) => {
       if (snap.docs.length) {
-        notifications.value = snap.docs
+        const sorted = snap.docs
           .map((d) => ({ ...(d.data() as AppNotification), id: d.id }))
           .sort((a, b) => b.timestamp - a.timestamp);
+        notifications.value = sorted;
+        writeStorage(KEY, sorted);
       }
     },
     () => {}

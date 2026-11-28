@@ -1,5 +1,5 @@
 import { computed, signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { DEFAULT_TASBIH_PRESETS, type TasbihPreset } from '@/data/tasbih-presets';
 import {
   createBadaSholatState,
@@ -280,12 +280,45 @@ export function updateTasbihPrefs(patch: Partial<TasbihPrefs>): void {
 let syncedUid: string | null = null;
 let unsubs: Array<() => void> = [];
 
+export function readLocalTasbihSnapshot() {
+  return {
+    tasbihPresets: readStorage<TasbihPreset[]>(KEYS.presets, [...DEFAULT_TASBIH_PRESETS]),
+    tasbihLogs: readStorage<Record<string, TasbihDayLog>>(KEYS.logs, {}),
+  };
+}
+
+export function applySyncedTasbih(
+  presets: TasbihPreset[],
+  logs: Record<string, TasbihDayLog>
+): void {
+  tasbihPresets.value = presets.length ? presets : [...DEFAULT_TASBIH_PRESETS];
+  tasbihLogs.value = logs;
+  writeStorage(KEYS.presets, tasbihPresets.value);
+  writeStorage(KEYS.logs, tasbihLogs.value);
+}
+
+export function clearLocalTasbih(): void {
+  removeStorage(KEYS.presets);
+  removeStorage(KEYS.logs);
+  removeStorage(KEYS.state);
+  tasbihPresets.value = [...DEFAULT_TASBIH_PRESETS];
+  tasbihLogs.value = {};
+  tasbihState.value = {
+    ...DEFAULT_STATE,
+    badaSholat: createBadaSholatState(),
+  };
+}
+
 export function bindTasbihSync(uid: string | null): void {
   if (syncedUid === uid) return;
   unsubs.forEach((u) => u());
   unsubs = [];
   syncedUid = uid;
-  if (!uid) return;
+  if (!uid) {
+    tasbihPresets.value = readStorage<TasbihPreset[]>(KEYS.presets, [...DEFAULT_TASBIH_PRESETS]);
+    tasbihLogs.value = readStorage<Record<string, TasbihDayLog>>(KEYS.logs, {});
+    return;
+  }
 
   unsubs.push(
     listenUserSubCol<TasbihPreset>(uid, 'tasbih_presets', (docs) => {

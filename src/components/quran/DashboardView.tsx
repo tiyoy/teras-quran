@@ -25,7 +25,7 @@ import {
 } from '@/lib/quran/api';
 import { addDaysToDateKey, formatDateKey } from '@/lib/quran/meta';
 import { formatPrayerClock, getNextPrayer, type PrayerName } from '@/lib/worship/prayer-times';
-import { authUser, userProfile } from '@/stores/auth';
+import { authUser, initAuthListener, userProfile } from '@/stores/auth';
 import { favorites, isFavoriteAyah, lastRead, notes, savedSurahs, toggleFavoriteAyah } from '@/stores/library';
 import { currentStreak, longestStreak, readingDays, todayLog, todayTargetAyahs } from '@/stores/progress';
 import { dueHifzItems, hifzTotals } from '@/stores/hifz';
@@ -67,8 +67,11 @@ export function DashboardView() {
   const [surahs, setSurahs] = useState<SurahMeta[]>([]);
   const [dailyAyah, setDailyAyah] = useState<Ayah | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    initAuthListener();
     const t = setInterval(() => setNow(new Date()), 30_000);
     fetchQuranMeta().then((m) => setSurahs(m.surahs)).catch(() => {});
     const dailyId = getDailyAyahGlobalId();
@@ -78,8 +81,10 @@ export function DashboardView() {
     return () => clearInterval(t);
   }, []);
 
-  const name = userProfile.value?.displayName || authUser.value?.displayName || '';
-  const lr = lastRead.value;
+  const name = mounted
+    ? userProfile.value?.displayName || authUser.value?.displayName || ''
+    : '';
+  const lr = mounted ? lastRead.value : null;
   const lrSurah = lr ? surahs.find((s) => s.id === lr.surahId) : null;
   const dailySurah = dailyAyah ? surahs.find((s) => s.id === dailyAyah.surahId) : null;
 
@@ -123,7 +128,7 @@ export function DashboardView() {
 
       {/* Continue Reading / Quick Start */}
       {lr ? (
-        <Card class="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
+        <Card key="dash-continue" class="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center">
           <div class="flex items-start gap-3.5">
             <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--primary)]">
               <Bookmark class="size-5" />
@@ -146,7 +151,7 @@ export function DashboardView() {
           </Button>
         </Card>
       ) : (
-        <Card class="p-5">
+        <Card key="dash-start" class="p-5">
           <p class="text-sm font-semibold">Mulai membaca</p>
           <p class="mt-0.5 text-xs text-[var(--muted-foreground)]">
             Belum ada bacaan terakhir. Pilih salah satu surah berikut atau buka daftar lengkap.

@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { currentUid } from './auth';
 import { upsertUserProfile } from '@/lib/firebase/firestore';
 import { formatDateKey } from '@/lib/quran/meta';
@@ -34,6 +34,24 @@ export const reminderSettings = signal<ReminderSettings>({
   ...DEFAULT_REMINDER,
   ...readStorage<Partial<ReminderSettings>>(KEY, {}),
 });
+
+export function readLocalReminderSnapshot(): ReminderSettings {
+  return {
+    ...DEFAULT_REMINDER,
+    ...readStorage<Partial<ReminderSettings>>(KEY, {}),
+  };
+}
+
+export function applySyncedReminder(next: ReminderSettings): void {
+  reminderSettings.value = next;
+  writeStorage(KEY, next);
+}
+
+export function clearLocalReminder(): void {
+  removeStorage(KEY);
+  removeStorage(SHOWN_KEY);
+  reminderSettings.value = { ...DEFAULT_REMINDER };
+}
 
 export function updateReminderSettings(patch: Partial<ReminderSettings>): void {
   const next: ReminderSettings = { ...reminderSettings.value, ...patch };

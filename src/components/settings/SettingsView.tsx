@@ -20,7 +20,7 @@ import {
   Trash2,
   User,
 } from 'lucide-preact';
-import { authUser, isAuthenticated, isFirebaseConfigured, userInitials, userProfile } from '@/stores/auth';
+import { authUser, isFirebaseConfigured, userInitials, userProfile } from '@/stores/auth';
 import { locale, setLocale } from '@/stores/locale';
 import { setThemeMode, themeMode } from '@/stores/theme';
 import {
@@ -78,6 +78,8 @@ import {
   upsertUserProfile,
 } from '@/lib/firebase/firestore';
 import { showToast } from '@/stores/toast';
+import { clearLocalUserSessionData } from '@/stores/sync';
+import { AuthGateSkeleton, useAuthGate } from '@/components/auth/LoginRequired';
 import { Badge, Button, Card, Modal, PageHeader, Switch } from '@/components/ui/Primitives';
 
 type SettingsTab = 'profil' | 'akun' | 'tampilan' | 'pengingat' | 'privasi' | 'bahaya';
@@ -112,7 +114,9 @@ export function SettingsView() {
   const [clearDevice, setClearDevice] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
+  const authGate = useAuthGate();
   const user = authUser.value;
+  const signedIn = authGate === 'authenticated' && Boolean(user);
   const profile = userProfile.value;
   const rs = readerSettings.value;
   const rem = reminderSettings.value;
@@ -139,8 +143,10 @@ export function SettingsView() {
     if (!user || !fullName.trim()) return;
     setSavingProfile(true);
     try {
-      await updateDisplayName(fullName.trim());
-      await upsertUserProfile(user.uid, { displayName: fullName.trim() });
+      const nextName = fullName.trim();
+      await updateDisplayName(nextName);
+      await upsertUserProfile(user.uid, { displayName: nextName });
+      userProfile.value = { ...(userProfile.value ?? {}), displayName: nextName };
       showToast('Profil berhasil disimpan.', { variant: 'success' });
     } catch (err) {
       showToast(mapAuthError(err), { variant: 'error' });
@@ -247,8 +253,10 @@ export function SettingsView() {
       {/* ================= TAB: PROFIL ================= */}
       {tab === 'profil' && (
         <div class="space-y-4">
-          {!isAuthenticated.value ? (
-            <Card class="p-6">
+          {authGate === 'loading' ? (
+            <AuthGateSkeleton />
+          ) : !signedIn ? (
+            <Card key="settings-profil-guest" class="p-6">
               <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                   <div class="flex size-14 items-center justify-center rounded-full bg-[var(--secondary)] text-lg font-bold text-[var(--secondary-foreground)]">
@@ -263,14 +271,14 @@ export function SettingsView() {
                     </p>
                   </div>
                 </div>
-                <Button href="/auth/login" size="sm">
+                <Button href="/auth/login?redirect=%2Fapp%2Fpengaturan" size="sm">
                   <LogIn class="size-4" />
                   Masuk akun
                 </Button>
               </div>
             </Card>
           ) : (
-            <>
+            <div key="settings-profil-auth" class="space-y-4">
               <Card class="flex items-center gap-4 p-5">
                 <div class="flex size-16 shrink-0 items-center justify-center rounded-full bg-[var(--secondary)] text-xl font-bold text-[var(--secondary-foreground)]">
                   {userInitials.value}
@@ -334,7 +342,7 @@ export function SettingsView() {
                   </div>
                 </form>
               </Card>
-            </>
+            </div>
           )}
         </div>
       )}
@@ -342,7 +350,7 @@ export function SettingsView() {
       {/* ================= TAB: AKUN ================= */}
       {tab === 'akun' && (
         <div class="space-y-4">
-          {user && (
+          {signedIn && user && (
             <>
               <Card class="space-y-3 p-5">
                 <div>
@@ -478,7 +486,7 @@ export function SettingsView() {
             </Button>
           </Card>
 
-          {user && (
+          {signedIn && user && (
             <Card class="space-y-3 p-5">
               <div>
                 <h2 class="text-base font-semibold">Keluar</h2>
@@ -491,6 +499,7 @@ export function SettingsView() {
                 variant="outline"
                 onClick={async () => {
                   await logoutAccount();
+                  clearLocalUserSessionData();
                   showToast('Kamu sudah keluar.');
                   window.location.href = '/app';
                 }}
@@ -1128,10 +1137,10 @@ export function SettingsView() {
         <Card class="space-y-4 p-5 sm:p-6">
           <div>
             <h2 class="text-base font-semibold">
-              {user ? 'Hapus akun' : 'Hapus seluruh data lokal'}
+              {signedIn ? 'Hapus akun' : 'Hapus seluruh data lokal'}
             </h2>
             <p class="mt-0.5 text-xs text-[var(--muted-foreground)]">
-              {user
+              {signedIn
                 ? 'Menghapus akun dan seluruh data pribadimu secara permanen. Tindakan ini tidak bisa dibatalkan.'
                 : 'Menghapus seluruh data bacaan, favorit, catatan, hafalan, progres, tasbih, dan cache offline di perangkat ini.'}
             </p>
@@ -1148,7 +1157,7 @@ export function SettingsView() {
             }}
           >
             <Trash2 class="size-4" />
-            {user ? 'Hapus akun' : 'Hapus data perangkat'}
+            {signedIn ? 'Hapus akun' : 'Hapus data perangkat'}
           </Button>
         </Card>
       )}

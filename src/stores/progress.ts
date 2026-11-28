@@ -1,5 +1,5 @@
 import { computed, signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { createMask, encodeMask, juzCoverage, markAyahs } from '@/lib/quran/ayah-mask';
 import { addDaysToDateKey, formatDateKey, TOTAL_AYAHS } from '@/lib/quran/meta';
 import { currentUid } from './auth';
@@ -125,21 +125,67 @@ export const longestStreak = computed(() => {
 let syncedUid: string | null = null;
 let unsubs: Array<() => void> = [];
 
+export function readLocalProgressSnapshot() {
+  return {
+    readingGoal: readStorage<ReadingGoal | null>(KEYS.goal, null),
+    readingDays: readStorage<Record<string, ReadingDayLog>>(KEYS.days, {}),
+    khatamCycles: readStorage<KhatamCycle[]>(KEYS.khatam, [defaultKhatam()]),
+  };
+}
+
+export function applySyncedReadingGoal(goal: ReadingGoal | null): void {
+  readingGoal.value = goal;
+  writeStorage(KEYS.goal, goal);
+}
+
+export function applySyncedProgress(data: {
+  readingGoal: ReadingGoal | null;
+  readingDays: Record<string, ReadingDayLog>;
+  khatamCycles: KhatamCycle[];
+}): void {
+  const cycles = data.khatamCycles.length ? data.khatamCycles : [defaultKhatam()];
+  readingGoal.value = data.readingGoal;
+  readingDays.value = data.readingDays;
+  khatamCycles.value = cycles;
+  writeStorage(KEYS.goal, data.readingGoal);
+  writeStorage(KEYS.days, data.readingDays);
+  writeStorage(KEYS.khatam, cycles);
+}
+
+export function clearLocalProgress(): void {
+  removeStorage(KEYS.goal);
+  removeStorage(KEYS.days);
+  removeStorage(KEYS.khatam);
+  readingGoal.value = null;
+  readingDays.value = {};
+  khatamCycles.value = [defaultKhatam()];
+}
+
 export function bindProgressSync(uid: string | null): void {
   if (syncedUid === uid) return;
   unsubs.forEach((u) => u());
   unsubs = [];
   syncedUid = uid;
-  if (!uid) return;
+  if (!uid) {
+    readingGoal.value = readStorage<ReadingGoal | null>(KEYS.goal, null);
+    readingDays.value = readStorage<Record<string, ReadingDayLog>>(KEYS.days, {});
+    khatamCycles.value = readStorage<KhatamCycle[]>(KEYS.khatam, [defaultKhatam()]);
+    return;
+  }
 
   unsubs.push(
     listenUserSubCol<ReadingDayLog>(uid, 'reading_days', (docs) => {
       const map: Record<string, ReadingDayLog> = {};
       for (const d of docs) map[d.date || d.id] = d;
       readingDays.value = map;
+      writeStorage(KEYS.days, map);
     }),
     listenUserSubCol<Omit<KhatamCycle, 'id'>>(uid, 'khatam', (docs) => {
-      if (docs.length) khatamCycles.value = docs.sort((a, b) => b.startedAt - a.startedAt);
+      if (docs.length) {
+        const sorted = docs.sort((a, b) => b.startedAt - a.startedAt);
+        khatamCycles.value = sorted;
+        writeStorage(KEYS.khatam, sorted);
+      }
     })
   );
 }
@@ -170,9 +216,14 @@ export function recordReadAyahs(globalIds: readonly number[]): void {
     updatedAt: Date.now(),
   };
 
+  const uid = currentUid.value;
+
   if (mergedIds.length !== prev.ayahIds.length) {
     readingDays.value = { ...readingDays.value, [todayKey]: updatedDay };
     writeStorage(KEYS.days, readingDays.value);
+    if (uid) {
+      putUserSubDoc(uid, 'reading_days', todayKey, updatedDay).catch(() => {});
+    }
   }
 
   // Update active khatam bitmask
@@ -186,9 +237,7 @@ export function recordReadAyahs(globalIds: readonly number[]): void {
       : [nextK, ...khatamCycles.value];
     writeStorage(KEYS.khatam, khatamCycles.value);
 
-    const uid = currentUid.value;
     if (uid) {
-      putUserSubDoc(uid, 'reading_days', todayKey, updatedDay).catch(() => {});
       putUserSubDoc(uid, 'khatam', nextK.id, nextK).catch(() => {});
     }
   }

@@ -1,6 +1,6 @@
 import { computed, signal } from '@preact/signals';
 import type { User } from 'firebase/auth';
-import { isFirebaseConfigured } from '@/lib/firebase/client';
+import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase/client';
 import { subscribeAuth } from '@/lib/firebase/auth';
 import { listenUserDoc, upsertUserProfile } from '@/lib/firebase/firestore';
 
@@ -52,11 +52,26 @@ let initialized = false;
 let unsubProfile: (() => void) | null = null;
 
 export function initAuthListener(): void {
-  if (initialized || typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return;
+  if (initialized) {
+    // Keep signal synchronized if Firebase Auth already resolved currentUser
+    const existing = getFirebaseAuth()?.currentUser ?? null;
+    if (existing && authUser.value?.uid !== existing.uid) {
+      authUser.value = existing;
+      authReady.value = true;
+    }
+    return;
+  }
   initialized = true;
   if (!isFirebaseConfigured) {
     authReady.value = true;
     return;
+  }
+
+  const current = getFirebaseAuth()?.currentUser ?? null;
+  if (current) {
+    authUser.value = current;
+    authReady.value = true;
   }
 
   // Offline-first safety timeout: never leave auth gates stuck loading if Firebase SDK stalls offline

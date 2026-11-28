@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals';
-import { readStorage, writeStorage } from '@/lib/storage';
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import { currentUid } from './auth';
 import {
   listenUserSubCol,
@@ -59,6 +59,53 @@ export const collections = signal<AyahCollection[]>(readStorage<AyahCollection[]
 let syncedUid: string | null = null;
 let unsubs: Array<() => void> = [];
 
+export function readLocalLibrarySnapshot() {
+  return {
+    lastRead: readStorage<LastReadEntry | null>(KEYS.lastRead, null),
+    favorites: readStorage<FavoriteAyah[]>(KEYS.favorites, []),
+    savedSurahs: readStorage<number[]>(KEYS.savedSurahs, []),
+    notes: readStorage<AyahNote[]>(KEYS.notes, []),
+    collections: readStorage<AyahCollection[]>(KEYS.collections, []),
+  };
+}
+
+export function applySyncedLastRead(entry: LastReadEntry | null): void {
+  lastRead.value = entry;
+  writeStorage(KEYS.lastRead, entry);
+}
+
+export function applySyncedLibrary(data: {
+  lastRead: LastReadEntry | null;
+  favorites: FavoriteAyah[];
+  savedSurahs: number[];
+  notes: AyahNote[];
+  collections: AyahCollection[];
+}): void {
+  lastRead.value = data.lastRead;
+  favorites.value = data.favorites;
+  savedSurahs.value = data.savedSurahs;
+  notes.value = data.notes;
+  collections.value = data.collections;
+  writeStorage(KEYS.lastRead, data.lastRead);
+  writeStorage(KEYS.favorites, data.favorites);
+  writeStorage(KEYS.savedSurahs, data.savedSurahs);
+  writeStorage(KEYS.notes, data.notes);
+  writeStorage(KEYS.collections, data.collections);
+}
+
+export function clearLocalLibrary(): void {
+  removeStorage(KEYS.lastRead);
+  removeStorage(KEYS.favorites);
+  removeStorage(KEYS.savedSurahs);
+  removeStorage(KEYS.notes);
+  removeStorage(KEYS.collections);
+  lastRead.value = null;
+  favorites.value = [];
+  savedSurahs.value = [];
+  notes.value = [];
+  collections.value = [];
+}
+
 export function bindLibrarySync(uid: string | null): void {
   if (syncedUid === uid) return;
   unsubs.forEach((u) => u());
@@ -76,16 +123,24 @@ export function bindLibrarySync(uid: string | null): void {
 
   unsubs.push(
     listenUserSubCol<FavoriteAyah>(uid, 'favorites', (docs) => {
-      favorites.value = docs.sort((a, b) => b.createdAt - a.createdAt);
+      const sorted = docs.sort((a, b) => b.createdAt - a.createdAt);
+      favorites.value = sorted;
+      writeStorage(KEYS.favorites, sorted);
     }),
     listenUserSubCol<{ surahId: number }>(uid, 'saved_surahs', (docs) => {
-      savedSurahs.value = docs.map((d) => Number(d.surahId || d.id)).sort((a, b) => a - b);
+      const sorted = docs.map((d) => Number(d.surahId || d.id)).sort((a, b) => a - b);
+      savedSurahs.value = sorted;
+      writeStorage(KEYS.savedSurahs, sorted);
     }),
     listenUserSubCol<AyahNote>(uid, 'notes', (docs) => {
-      notes.value = docs.sort((a, b) => b.updatedAt - a.updatedAt);
+      const sorted = docs.sort((a, b) => b.updatedAt - a.updatedAt);
+      notes.value = sorted;
+      writeStorage(KEYS.notes, sorted);
     }),
     listenUserSubCol<Omit<AyahCollection, 'id'>>(uid, 'collections', (docs) => {
-      collections.value = docs.sort((a, b) => b.updatedAt - a.updatedAt);
+      const sorted = docs.sort((a, b) => b.updatedAt - a.updatedAt);
+      collections.value = sorted;
+      writeStorage(KEYS.collections, sorted);
     })
   );
 }

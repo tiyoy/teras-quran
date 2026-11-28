@@ -143,4 +143,47 @@ export async function deleteAllFirestoreUserData(uid: string): Promise<void> {
   await deleteDoc(doc(db, 'users', uid));
 }
 
+export async function getUserDocOnce<T>(uid: string): Promise<T | null> {
+  const ref = userDocRef(uid);
+  if (!ref) return null;
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as T) : null;
+}
+
+export async function getUserSubColOnce<T>(
+  uid: string,
+  sub: string
+): Promise<Array<T & { id: string }>> {
+  const col = userSubCol(uid, sub);
+  if (!col) return [];
+  const snap = await getDocs(col);
+  return snap.docs.map((d) => ({ ...(d.data() as T), id: d.id }));
+}
+
+export interface BatchWriteOp {
+  type: 'set' | 'delete';
+  sub?: string; // omit for users/{uid} profile doc
+  id?: string;
+  data?: DocumentData;
+}
+
+export async function commitUserBatchOps(uid: string, ops: BatchWriteOp[]): Promise<void> {
+  const db = getFirebaseDb();
+  if (!db || !ops.length) return;
+  for (let i = 0; i < ops.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const op of ops.slice(i, i + 400)) {
+      const ref = op.sub
+        ? doc(db, 'users', uid, op.sub, op.id!)
+        : doc(db, 'users', uid);
+      if (op.type === 'delete') {
+        batch.delete(ref);
+      } else {
+        batch.set(ref, op.data ?? {}, { merge: true });
+      }
+    }
+    await batch.commit();
+  }
+}
+
 export { collection, doc, getDoc, getDocs, onSnapshot, query, runTransaction, setDoc, where, writeBatch, deleteDoc };

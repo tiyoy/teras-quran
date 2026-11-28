@@ -78,6 +78,27 @@ export function markAyahs(
   };
 }
 
+export function mergeMasks(
+  base64A: string | null | undefined,
+  base64B: string | null | undefined
+): { readMask: string; readCount: number; changed: boolean } {
+  const maskA = decodeMask(base64A);
+  const maskB = decodeMask(base64B);
+  let changed = false;
+  for (let i = 0; i < maskA.length; i++) {
+    const combined = maskA[i] | maskB[i];
+    if (combined !== maskA[i]) {
+      maskA[i] = combined;
+      changed = true;
+    }
+  }
+  return {
+    readMask: encodeMask(maskA),
+    readCount: countBits(maskA),
+    changed,
+  };
+}
+
 export function juzCoverage(maskOrBase64: Uint8Array | string | null | undefined): number[] {
   const mask = maskOrBase64 instanceof Uint8Array ? maskOrBase64 : decodeMask(maskOrBase64);
   return JUZ_START_AYAH.map((start, idx) => {

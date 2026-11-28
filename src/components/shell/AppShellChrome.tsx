@@ -217,8 +217,9 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
             )}
           </a>
 
-          {isAuthenticated.value ? (
+          {mounted && isAuthenticated.value ? (
             <a
+              key="shell-user-avatar"
               href="/app/pengaturan"
               aria-label="Pengaturan akun"
               class="ml-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--secondary)] text-xs font-semibold text-[var(--secondary-foreground)] hover:border-[var(--primary)] sm:ml-1 no-underline"
@@ -227,7 +228,12 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
             </a>
           ) : (
             <a
-              href="/auth/login"
+              key="shell-login-btn"
+              href={
+                mounted && pathname.startsWith('/app') && pathname !== '/app' && pathname !== '/app/'
+                  ? `/auth/login?redirect=${encodeURIComponent(pathname)}`
+                  : '/auth/login'
+              }
               aria-label="Masuk"
               class="ml-0.5 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] px-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--muted)] sm:ml-1 sm:px-3 no-underline"
             >
