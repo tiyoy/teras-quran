@@ -20,7 +20,7 @@ import {
   Trash2,
   User,
 } from 'lucide-preact';
-import { authUser, isFirebaseConfigured, userInitials, userProfile } from '@/stores/auth';
+import { authUser, isFirebaseConfigured, userInitials, userPhotoUrl, userProfile } from '@/stores/auth';
 import { locale, setLocale } from '@/stores/locale';
 import { setThemeMode, themeMode } from '@/stores/theme';
 import {
@@ -80,6 +80,7 @@ import {
 import { showToast } from '@/stores/toast';
 import { clearLocalUserSessionData } from '@/stores/sync';
 import { AuthGateSkeleton, useAuthGate } from '@/components/auth/LoginRequired';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { Badge, Button, Card, Modal, PageHeader, Switch } from '@/components/ui/Primitives';
 
 type SettingsTab = 'profil' | 'akun' | 'tampilan' | 'pengingat' | 'privasi' | 'bahaya';
@@ -280,9 +281,12 @@ export function SettingsView() {
           ) : (
             <div key="settings-profil-auth" class="space-y-4">
               <Card class="flex items-center gap-4 p-5">
-                <div class="flex size-16 shrink-0 items-center justify-center rounded-full bg-[var(--secondary)] text-xl font-bold text-[var(--secondary-foreground)]">
-                  {userInitials.value}
-                </div>
+                <UserAvatar
+                  src={userPhotoUrl.value}
+                  initials={userInitials.value}
+                  alt={profile?.displayName || user?.displayName || 'Foto profil'}
+                  class="size-16 border border-[var(--border)] text-xl font-bold"
+                />
                 <div>
                   <p class="text-base font-bold">{profile?.displayName || user?.displayName || 'Pembaca'}</p>
                   <p class="text-sm text-[var(--muted-foreground)]">{user?.email}</p>

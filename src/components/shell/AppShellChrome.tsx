@@ -11,7 +11,8 @@ import {
   MOBILE_QUICK_NAV,
   NAV_GROUPS,
 } from './nav-items';
-import { isAuthenticated, userInitials } from '@/stores/auth';
+import { authUser, isAuthenticated, userInitials, userPhotoUrl, userProfile } from '@/stores/auth';
+import { UserAvatar } from '@/components/ui/UserAvatar';
 import { unreadNotificationCount } from '@/stores/notifications';
 import { bootstrapAppStores } from '@/stores/sync';
 import { checkAndTriggerReminder } from '@/stores/reminders';
@@ -222,9 +223,15 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
               key="shell-user-avatar"
               href="/app/pengaturan"
               aria-label="Pengaturan akun"
-              class="ml-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--secondary)] text-xs font-semibold text-[var(--secondary-foreground)] hover:border-[var(--primary)] sm:ml-1 no-underline"
+              title={userProfile.value?.displayName || authUser.value?.displayName || 'Pengaturan akun'}
+              class="ml-0.5 inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--border)] hover:border-[var(--primary)] sm:ml-1 no-underline"
             >
-              {userInitials.value}
+              <UserAvatar
+                src={userPhotoUrl.value}
+                initials={userInitials.value}
+                alt={userProfile.value?.displayName || authUser.value?.displayName || 'Foto profil'}
+                class="size-full text-xs font-semibold"
+              />
             </a>
           ) : (
             <a

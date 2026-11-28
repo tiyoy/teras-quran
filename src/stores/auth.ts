@@ -7,6 +7,7 @@ import { listenUserDoc, upsertUserProfile } from '@/lib/firebase/firestore';
 export interface UserProfileDoc {
   displayName?: string;
   email?: string;
+  photoURL?: string | null;
   createdAt?: number;
   updatedAt?: number;
   lastRead?: {
@@ -46,6 +47,22 @@ export const userInitials = computed(() => {
   return parts.length >= 2
     ? (parts[0][0] + parts[1][0]).toUpperCase()
     : name.slice(0, 2).toUpperCase();
+});
+
+function resolveAuthPhotoUrl(user: User | null): string | null {
+  if (!user) return null;
+  const raw =
+    user.photoURL ||
+    user.providerData?.find((p) => Boolean(p?.photoURL))?.photoURL ||
+    null;
+  return raw && /^https?:\/\//i.test(raw) ? raw : null;
+}
+
+export const userPhotoUrl = computed<string | null>(() => {
+  const fromAuth = resolveAuthPhotoUrl(authUser.value);
+  if (fromAuth) return fromAuth;
+  const fromProfile = userProfile.value?.photoURL ?? null;
+  return fromProfile && /^https?:\/\//i.test(fromProfile) ? fromProfile : null;
 });
 
 let initialized = false;
@@ -89,17 +106,22 @@ export function initAuthListener(): void {
     unsubProfile = null;
 
     if (user) {
+      const authPhoto = resolveAuthPhotoUrl(user);
       unsubProfile = listenUserDoc<UserProfileDoc>(user.uid, (docData) => {
         if (!docData) {
           const initial: UserProfileDoc = {
             displayName: user.displayName || user.email?.split('@')[0] || 'Pembaca',
             email: user.email || '',
+            photoURL: authPhoto,
             createdAt: Date.now(),
           };
           userProfile.value = initial;
           upsertUserProfile(user.uid, initial).catch(() => {});
         } else {
           userProfile.value = docData;
+          if (authPhoto && docData.photoURL !== authPhoto) {
+            upsertUserProfile(user.uid, { photoURL: authPhoto }).catch(() => {});
+          }
         }
       });
     } else {
