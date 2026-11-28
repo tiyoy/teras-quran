@@ -110,25 +110,61 @@ export const BOTTOM_SIDEBAR_ITEMS: readonly NavItemDef[] = [
   { href: '/app/pengaturan', label: 'Pengaturan', description: 'Profil, tampilan, audio, privasi', icon: Settings },
 ];
 
-export const MOBILE_QUICK_NAV: readonly NavItemDef[] = [
-  { href: '/app', label: 'Beranda', description: '', icon: House },
+export interface MobileNavGroupDef {
+  id: 'beranda' | 'quran' | 'pribadi' | 'ibadah' | 'pengaturan';
+  label: string;
+  title: string;
+  icon: ComponentType<{ class?: string }>;
+  href?: string;
+  items?: readonly NavItemDef[];
+}
+
+export const MOBILE_NAV_GROUPS: readonly MobileNavGroupDef[] = [
   {
-    href: '/app/surah',
-    label: 'Surah',
-    description: '',
-    icon: BookOpen,
-    matchPrefixes: ['/app/baca/', '/app/tafsir', '/app/halaman'],
+    id: 'beranda',
+    label: 'Beranda',
+    title: 'Beranda',
+    icon: House,
+    href: '/app',
   },
-  { href: '/app/bacaanku', label: 'Bacaanku', description: '', icon: Bookmark },
-  { href: '/app/tasbih', label: 'Tasbih', description: '', icon: CircleDot },
   {
-    href: '/app/favorit',
-    label: 'Tersimpan',
-    description: '',
-    icon: Heart,
-    matchPrefixes: ['/app/koleksi'],
+    id: 'quran',
+    label: "Al-Qur'an",
+    title: "Al-Qur'an",
+    icon: BookOpen,
+    items: NAV_GROUPS[0].items.filter((it) => it.href !== '/app'),
+  },
+  {
+    id: 'pribadi',
+    label: 'Pribadi',
+    title: 'Pribadi',
+    icon: Bookmark,
+    items: NAV_GROUPS[1].items,
+  },
+  {
+    id: 'ibadah',
+    label: 'Ibadah',
+    title: 'Ibadah',
+    icon: Compass,
+    items: NAV_GROUPS[2].items,
+  },
+  {
+    id: 'pengaturan',
+    label: 'Pengaturan',
+    title: 'Pengaturan',
+    icon: Settings,
+    href: '/app/pengaturan',
   },
 ];
+
+export function isMobileGroupActive(group: MobileNavGroupDef, pathname: string): boolean {
+  if (group.href) {
+    const clean = pathname.replace(/\/+$/, '') || '/';
+    const target = group.href.replace(/\/+$/, '') || '/';
+    return clean === target;
+  }
+  return Boolean(group.items?.some((item) => isNavItemActive(item, pathname)));
+}
 
 export const ALL_NAV_ITEMS: readonly NavItemDef[] = [
   ...NAV_GROUPS.flatMap((g) => g.items),

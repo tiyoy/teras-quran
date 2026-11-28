@@ -65,7 +65,7 @@ export function LastReadView() {
     <div>
       <PageHeader
         title="Bacaanku"
-        description="Ayat terakhir yang kamu tandai, supaya mudah melanjutkan bacaan."
+        description="Ayat terakhir yang kamu baca, ketuk, atau dengarkan tersimpan otomatis lintas perangkat."
       />
 
       {gate === 'loading' ? (
@@ -76,7 +76,7 @@ export function LastReadView() {
         <EmptyState
           icon={<Bookmark class="size-5" />}
           title="Belum ada bacaan terakhir"
-          description='Saat membaca, buka menu ⋮ pada ayat lalu pilih "Tandai bacaan terakhir".'
+          description="Baca surah, ketuk kartu ayat, atau putar murottal untuk menyimpan posisi bacaan terakhir secara otomatis."
           action={
             <Button href="/app/surah" size="sm">
               <BookOpen class="size-4" />

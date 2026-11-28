@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { BookOpen, Flame, History, LogIn, RefreshCw, Target } from 'lucide-preact';
 import {
   activeKhatam,
@@ -27,6 +27,11 @@ export function ProgressView() {
   const [amount, setAmount] = useState(readingGoal.value?.amount ?? 20);
   const [targetDate, setTargetDate] = useState(readingGoal.value?.targetDate ?? '');
   const [confirmNewOpen, setConfirmNewOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const authGate = useAuthGate();
   const loggedIn = authGate === 'authenticated';
@@ -55,10 +60,12 @@ export function ProgressView() {
     };
   });
 
-  const history30 = Object.values(readingDays.value)
-    .filter((d) => d.ayahCount > 0)
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 30);
+  const history30 = mounted
+    ? Object.values(readingDays.value)
+        .filter((d) => d.ayahCount > 0)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 30)
+    : [];
 
   return (
     <div class="space-y-5">
@@ -266,34 +273,50 @@ export function ProgressView() {
       {/* Riwayat 30 Hari */}
       <div>
         <h2 class="mb-3 text-sm font-semibold">Riwayat 30 hari</h2>
-        {history30.length === 0 ? (
-          <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-10 text-center">
+        {!mounted ? (
+          <div
+            key="history-loading"
+            role="status"
+            aria-busy="true"
+            aria-label="Memuat riwayat bacaan…"
+            class="h-28 animate-pulse rounded-2xl border border-[var(--border)] bg-[var(--card)]"
+          />
+        ) : history30.length === 0 ? (
+          <section
+            key="history-empty"
+            class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] px-6 py-10 text-center"
+          >
             <div class="mb-3 flex size-10 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)]">
               <History class="size-4" />
             </div>
             <p class="max-w-xs text-sm font-medium text-[var(--foreground)]">
               Belum ada riwayat bacaan. Ayat yang kamu baca akan tercatat di sini.
             </p>
-          </div>
+          </section>
         ) : (
-          <Card class="divide-y divide-[var(--border)]">
-            {history30.map((d) => {
-              const [y, m, day] = d.date.split('-').map(Number);
-              const label = new Intl.DateTimeFormat('id-ID', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              }).format(new Date(y, m - 1, day));
-              return (
-                <div key={d.date} class="flex items-center justify-between px-4 py-3 text-sm">
-                  <span class="text-[var(--foreground)]">{label}</span>
-                  <span class="font-semibold tabular-nums text-[var(--primary)]">
-                    {d.ayahCount} ayat
-                  </span>
-                </div>
-              );
-            })}
+          <Card key="history-list" class="overflow-hidden">
+            <ul class="divide-y divide-[var(--border)]">
+              {history30.map((d) => {
+                const [y, m, day] = d.date.split('-').map(Number);
+                const label = new Intl.DateTimeFormat('id-ID', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                }).format(new Date(y, m - 1, day));
+                return (
+                  <li
+                    key={d.date}
+                    class="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                  >
+                    <span class="min-w-0 truncate text-[var(--foreground)]">{label}</span>
+                    <span class="shrink-0 whitespace-nowrap font-semibold tabular-nums text-[var(--primary)]">
+                      {d.ayahCount.toLocaleString('id-ID')} ayat
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </Card>
         )}
       </div>

@@ -96,10 +96,30 @@ let fallbackIdx = 0;
 let gapTimer: ReturnType<typeof setTimeout> | null = null;
 let sleepTimeout: ReturnType<typeof setTimeout> | null = null;
 const endedCallbacks = new Set<(ayah: Ayah) => void>();
+const pausedOrStoppedCallbacks = new Set<(ayah: Ayah, reason: 'pause' | 'stop') => void>();
+let lastPauseNotifyKey = '';
+let lastPauseNotifyAt = 0;
 
 export function onAyahAudioCompleted(cb: (ayah: Ayah) => void): () => void {
   endedCallbacks.add(cb);
   return () => endedCallbacks.delete(cb);
+}
+
+export function onAyahAudioPausedOrStopped(
+  cb: (ayah: Ayah, reason: 'pause' | 'stop') => void
+): () => void {
+  pausedOrStoppedCallbacks.add(cb);
+  return () => pausedOrStoppedCallbacks.delete(cb);
+}
+
+function notifyPausedOrStopped(ayah: Ayah | null, reason: 'pause' | 'stop') {
+  if (!ayah) return;
+  const key = `${reason}:${ayah.i}`;
+  const now = Date.now();
+  if (key === lastPauseNotifyKey && now - lastPauseNotifyAt < 1200) return;
+  lastPauseNotifyKey = key;
+  lastPauseNotifyAt = now;
+  pausedOrStoppedCallbacks.forEach((cb) => cb(ayah, reason));
 }
 
 function clearGapTimer() {
@@ -115,7 +135,12 @@ function getAudio(): HTMLAudioElement | null {
     audioEl = new Audio();
     audioEl.preload = 'auto';
     audioEl.addEventListener('play', () => (isPlaying.value = true));
-    audioEl.addEventListener('pause', () => (isPlaying.value = false));
+    audioEl.addEventListener('pause', () => {
+      isPlaying.value = false;
+      if (audioEl && !audioEl.ended && currentAyah.value) {
+        notifyPausedOrStopped(currentAyah.value, 'pause');
+      }
+    });
     audioEl.addEventListener('waiting', () => (isBuffering.value = true));
     audioEl.addEventListener('playing', () => (isBuffering.value = false));
     audioEl.addEventListener('timeupdate', () => {
@@ -335,13 +360,17 @@ export function seekPercent(pct: number): void {
 
 export function stopAudio(): void {
   clearGapTimer();
+  const stoppingAyah = currentAyah.value;
+  if (stoppingAyah) {
+    notifyPausedOrStopped(stoppingAyah, 'stop');
+  }
+  currentAyah.value = null;
   const el = getAudio();
   if (el) {
     el.pause();
     el.removeAttribute('src');
     el.load();
   }
-  currentAyah.value = null;
   isPlaying.value = false;
   isBuffering.value = false;
   currentTime.value = 0;

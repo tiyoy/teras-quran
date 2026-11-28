@@ -84,7 +84,19 @@ export function MushafPageView({ pageNumber: initialPage }: { pageNumber: number
         setLoading(false);
         if (list.length) {
           setTimeout(() => {
-            if (alive) recordReadAyahs(list.map((a) => a.i));
+            if (!alive) return;
+            recordReadAyahs(list.map((a) => a.i));
+            const first = list[0];
+            setLastRead(
+              {
+                surahId: first.surahId,
+                ayahNumber: first.n,
+                globalAyahId: first.i,
+                page: first.page,
+                juz: first.juz,
+              },
+              { silent: true }
+            );
           }, 2000);
         }
       })

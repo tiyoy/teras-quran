@@ -120,6 +120,7 @@ export function DashboardView() {
         <Button
           href={lr ? `/app/baca/${lr.surahId}?ayat=${lr.ayahNumber}` : '/app/surah'}
           size="md"
+          class="hidden sm:inline-flex"
         >
           <BookOpen class="size-4" />
           {lr && lrSurah ? `Lanjutkan ${lrSurah.name}:${lr.ayahNumber}` : 'Mulai membaca'}

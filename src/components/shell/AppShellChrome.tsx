@@ -7,9 +7,11 @@ import { CommandPalette } from './CommandPalette';
 import { AudioPlayerBar } from './AudioPlayerBar';
 import {
   BOTTOM_SIDEBAR_ITEMS,
+  isMobileGroupActive,
   isNavItemActive,
-  MOBILE_QUICK_NAV,
+  MOBILE_NAV_GROUPS,
   NAV_GROUPS,
+  type MobileNavGroupDef,
 } from './nav-items';
 import { authUser, isAuthenticated, userInitials, userPhotoUrl, userProfile } from '@/stores/auth';
 import { UserAvatar } from '@/components/ui/UserAvatar';
@@ -24,6 +26,7 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
   const [pathname, setPathname] = useState(initialPath);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [mobileSheetId, setMobileSheetId] = useState<MobileNavGroupDef['id'] | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
     const syncPath = () => {
       setPathname(window.location.pathname);
       setDrawerOpen(false);
+      setMobileSheetId(null);
     };
     syncPath();
 
@@ -40,6 +44,8 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandOpen((v) => !v);
+      } else if (e.key === 'Escape') {
+        setMobileSheetId(null);
       }
     };
 
@@ -157,7 +163,7 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
       {/* Mobile Drawer */}
       {drawerOpen && (
         <div
-          class="fixed inset-0 z-50 bg-black/50 lg:hidden"
+          class="fixed inset-0 z-[60] bg-black/50 lg:hidden"
           onClick={(e) => {
             if (e.target === e.currentTarget) setDrawerOpen(false);
           }}
@@ -270,27 +276,118 @@ export function AppShellChrome({ initialPath }: { initialPath: string }) {
         </div>
       )}
 
-      {/* Mobile Bottom Quick Nav */}
+      {/* Mobile Half-Screen Bottom-Up Submenu Sheet (leaves page behind semi-visible & navbar interactive) */}
+      {(() => {
+        const activeSheet = mobileSheetId
+          ? MOBILE_NAV_GROUPS.find((g) => g.id === mobileSheetId && g.items?.length)
+          : null;
+        if (!activeSheet || !activeSheet.items) return null;
+        return (
+          <>
+            <div
+              class="fixed inset-x-0 top-0 bottom-14 z-[35] bg-black/30 lg:hidden"
+              onClick={() => setMobileSheetId(null)}
+              aria-hidden="true"
+            />
+            <section
+              role="dialog"
+              aria-label={`Menu ${activeSheet.title}`}
+              class="tq-sheet-up fixed inset-x-0 bottom-14 z-[38] flex max-h-[50dvh] flex-col rounded-t-2xl border-t border-[var(--border)] bg-[var(--card)] text-[var(--card-foreground)] lg:hidden"
+            >
+              <div class="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-[var(--border)]" />
+              <div class="flex shrink-0 items-center justify-between px-4 pt-2 pb-2.5">
+                <p class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                  {activeSheet.title}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMobileSheetId(null)}
+                  aria-label="Tutup submenu"
+                  class="inline-flex size-7 items-center justify-center rounded-lg text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] cursor-pointer"
+                >
+                  <X class="size-4" />
+                </button>
+              </div>
+              <div class="grid flex-1 grid-cols-2 gap-2 overflow-y-auto px-4 pb-4">
+                {activeSheet.items.map((item) => {
+                  const active = isNavItemActive(item, pathname);
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileSheetId(null)}
+                      class={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors no-underline ${
+                        active
+                          ? 'border-[var(--primary)] bg-[var(--accent)] text-[var(--accent-foreground)]'
+                          : 'border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:border-[var(--primary)]/50'
+                      }`}
+                    >
+                      <Icon
+                        class={`size-4 shrink-0 ${
+                          active ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]'
+                        }`}
+                      />
+                      <span class="min-w-0 truncate text-xs font-semibold">{item.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+          </>
+        );
+      })()}
+
+      {/* Mobile Grouped Bottom Navbar */}
       <nav
         aria-label="Navigasi cepat"
-        class="fixed inset-x-0 bottom-0 z-30 flex h-14 items-center justify-around border-t border-[var(--border)] bg-[var(--card)] px-1 lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch justify-around border-t border-[var(--border)] bg-[var(--card)] px-1 lg:hidden"
       >
-        {MOBILE_QUICK_NAV.map((item) => {
-          const active = isNavItemActive(item, pathname);
-          const Icon = item.icon;
+        {MOBILE_NAV_GROUPS.map((group) => {
+          const Icon = group.icon;
+          const isSheetOpen = mobileSheetId === group.id;
+          const isRouteActive = isMobileGroupActive(group, pathname);
+          const highlighted = isSheetOpen || (mobileSheetId === null && isRouteActive);
+
+          if (group.href) {
+            return (
+              <a
+                key={group.id}
+                href={group.href}
+                onClick={() => setMobileSheetId(null)}
+                class={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] leading-tight no-underline ${
+                  highlighted
+                    ? 'font-semibold text-[var(--primary)]'
+                    : 'text-[var(--muted-foreground)]'
+                }`}
+              >
+                {highlighted && (
+                  <span class="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--primary)]" />
+                )}
+                <Icon class="size-[18px] shrink-0" />
+                <span class="max-w-full truncate px-0.5">{group.label}</span>
+              </a>
+            );
+          }
+
           return (
-            <a
-              key={item.href}
-              href={item.href}
-              class={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[11px] no-underline ${
-                active
+            <button
+              key={group.id}
+              type="button"
+              aria-expanded={isSheetOpen}
+              onClick={() => setMobileSheetId((prev) => (prev === group.id ? null : group.id))}
+              class={`relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] leading-tight cursor-pointer ${
+                highlighted
                   ? 'font-semibold text-[var(--primary)]'
                   : 'text-[var(--muted-foreground)]'
               }`}
             >
-              <Icon class="size-[18px]" />
-              <span>{item.label}</span>
-            </a>
+              {highlighted && (
+                <span class="absolute top-0 inset-x-3 h-0.5 rounded-full bg-[var(--primary)]" />
+              )}
+              <Icon class="size-[18px] shrink-0" />
+              <span class="max-w-full truncate px-0.5">{group.label}</span>
+            </button>
           );
         })}
       </nav>

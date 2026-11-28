@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
-import { currentUid } from './auth';
+import { currentUid, userProfile } from './auth';
 import {
   listenUserSubCol,
   putUserSubDoc,
@@ -145,13 +145,33 @@ export function bindLibrarySync(uid: string | null): void {
   );
 }
 
-export function setLastRead(entry: Omit<LastReadEntry, 'updatedAt'>): void {
+export function setLastRead(
+  entry: Omit<LastReadEntry, 'updatedAt'>,
+  options?: { silent?: boolean; toastMessage?: string }
+): void {
+  const prev = lastRead.value;
+  const uid = currentUid.value;
+
+  if (options?.silent && prev?.globalAyahId === entry.globalAyahId) {
+    // Still push to Firestore if cloud profile doesn't have this ayah yet
+    if (uid && userProfile.value?.lastRead?.globalAyahId !== entry.globalAyahId) {
+      upsertUserProfile(uid, { lastRead: prev }).catch(() => {});
+    }
+    return;
+  }
+
   const full: LastReadEntry = { ...entry, updatedAt: Date.now() };
   lastRead.value = full;
   writeStorage(KEYS.lastRead, full);
-  const uid = currentUid.value;
-  if (uid) upsertUserProfile(uid, { lastRead: full }).catch(() => {});
-  showToast('Ditandai sebagai bacaan terakhir.', { variant: 'success' });
+  if (uid) {
+    upsertUserProfile(uid, { lastRead: full }).catch(() => {});
+  }
+  if (!options?.silent) {
+    showToast(
+      options?.toastMessage ?? `Ditandai sebagai bacaan terakhir (Ayat ${entry.ayahNumber}).`,
+      { variant: 'success' }
+    );
+  }
 }
 
 export function isFavoriteAyah(globalAyahId: number): boolean {

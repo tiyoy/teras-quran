@@ -50,6 +50,8 @@ interface AyahCardProps {
   queue?: Ayah[];
   tajwidSegments?: TajwidSegment[];
   highlighted?: boolean;
+  enableTapLastRead?: boolean;
+  onManualLastRead?: (ayah: Ayah) => void;
 }
 
 export function AyahCard({
@@ -58,6 +60,8 @@ export function AyahCard({
   queue,
   tajwidSegments,
   highlighted = false,
+  enableTapLastRead = false,
+  onManualLastRead,
 }: AyahCardProps) {
   const settings = readerSettings.value;
   const isCurrent = currentAyah.value?.i === ayah.i;
@@ -166,14 +170,41 @@ export function AyahCard({
     showToast('Gambar diunduh.', { variant: 'success' });
   }
 
+  function handleCardTap(e: MouseEvent) {
+    if (!enableTapLastRead) return;
+    if (menuOpen || noteOpen || colOpen || hifzOpen || shareOpen) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    if (
+      target.closest('button, a, input, textarea, select, label, [role="dialog"], [data-tajwid-word], [data-ignore-card-tap]')
+    ) {
+      return;
+    }
+    const sel = typeof window !== 'undefined' ? window.getSelection()?.toString() : '';
+    if (sel && sel.trim().length > 0) return;
+
+    setLastRead({
+      surahId: ayah.surahId,
+      ayahNumber: ayah.n,
+      globalAyahId: ayah.i,
+      page: ayah.page,
+      juz: ayah.juz,
+    });
+    onManualLastRead?.(ayah);
+  }
+
   return (
     <article
       id={`ayat-${ayah.n}`}
+      data-ayah-num={ayah.n}
+      onClick={handleCardTap}
       class={`scroll-mt-20 rounded-2xl border p-4 transition-colors sm:p-6 ${
         isCurrent || highlighted
           ? 'border-[var(--primary)] bg-[var(--accent)]/40'
-          : 'border-[var(--border)] bg-[var(--card)]'
-      }`}
+          : isLastRead
+            ? 'border-[var(--primary)]/50 bg-[var(--card)]'
+            : 'border-[var(--border)] bg-[var(--card)]'
+      } ${enableTapLastRead ? 'cursor-pointer hover:border-[var(--primary)]/50' : ''}`}
     >
       {/* Top Action Row */}
       <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -348,8 +379,11 @@ export function AyahCard({
 
       {/* Arabic Text (Tajwid or LPMQ, with Hide Arabic blur mode) */}
       <div
-        onClick={() => {
-          if (settings.hideArabic) setRevealed((r) => !r);
+        onClick={(e) => {
+          if (settings.hideArabic) {
+            e.stopPropagation();
+            setRevealed((r) => !r);
+          }
         }}
         class={`relative ${settings.hideArabic ? 'cursor-pointer select-none' : ''}`}
         title={settings.hideArabic ? 'Ketuk untuk menampilkan teks Arab' : undefined}
@@ -367,6 +401,7 @@ export function AyahCard({
                 grp ? (
                   <span
                     key={idx}
+                    data-tajwid-word="true"
                     class={`${tajwidClassName(grp)} cursor-pointer rounded px-0.5 hover:bg-[var(--muted)]`}
                     onMouseEnter={() => setHoveredRule(grp)}
                     onMouseLeave={() => setHoveredRule(null)}

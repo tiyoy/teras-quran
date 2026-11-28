@@ -267,9 +267,27 @@ html.tq-splash-skip #tq-splash {
   transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+@keyframes tq-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.75;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.tq-sheet-up {
+  animation: tq-sheet-up 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #tq-splash,
   #tq-splash-bar {
     transition: none;
+  }
+  .tq-sheet-up {
+    animation: none;
   }
 }

@@ -1,9 +1,10 @@
-import { effect } from '@preact/signals';
+import { effect, signal } from '@preact/signals';
 import { readStorage, removeStorage, writeStorage } from '@/lib/storage';
 import {
   commitUserBatchOps,
   getUserDocOnce,
   getUserSubColOnce,
+  upsertUserProfile,
   type BatchWriteOp,
 } from '@/lib/firebase/firestore';
 import {
@@ -20,7 +21,9 @@ import {
   applySyncedLibrary,
   bindLibrarySync,
   clearLocalLibrary,
+  lastRead,
   readLocalLibrarySnapshot,
+  setLastRead,
   type AyahCollection,
   type AyahNote,
   type FavoriteAyah,
@@ -46,20 +49,28 @@ import {
   type TasbihDayLog,
 } from './tasbih';
 import { applySyncedReminder, clearLocalReminder, readLocalReminderSnapshot } from './reminders';
-import { onAyahAudioCompleted } from './audio-player';
+import { onAyahAudioCompleted, onAyahAudioPausedOrStopped } from './audio-player';
 import { initPwaListener } from './pwa';
 import { initOfflineSync } from './offline';
 import { showToast } from './toast';
 
 const SYNC_OWNER_KEY = 'tq:sync:ownerUid';
 
+const syncOwnerUid = signal<string | null>(readStorage<string | null>(SYNC_OWNER_KEY, null));
+const migratingUid = signal<string | null>(null);
+
 let started = false;
 let unsubKhataman: (() => void) | null = null;
 let unsubNotifs: (() => void) | null = null;
 let syncSessionSeq = 0;
 let activeBoundUid: string | null = null;
-let migratingUid: string | null = null;
 let retryMigrationUid: string | null = null;
+
+function setSyncOwner(uid: string | null): void {
+  if (uid) writeStorage(SYNC_OWNER_KEY, uid);
+  else removeStorage(SYNC_OWNER_KEY);
+  syncOwnerUid.value = uid;
+}
 
 function collectLocalGuestSnapshot(): UserDataSnapshot {
   const lib = readLocalLibrarySnapshot();
@@ -216,7 +227,7 @@ async function runGuestMigration(
   local: UserDataSnapshot,
   seq: number
 ): Promise<void> {
-  migratingUid = uid;
+  migratingUid.value = uid;
   try {
     const cloud = await fetchCloudSnapshot(uid);
     if (seq !== syncSessionSeq || currentUid.value !== uid) return;
@@ -231,8 +242,8 @@ async function runGuestMigration(
 
     if (seq !== syncSessionSeq || currentUid.value !== uid) return;
 
-    writeStorage(SYNC_OWNER_KEY, uid);
-    migratingUid = null;
+    setSyncOwner(uid);
+    migratingUid.value = null;
     retryMigrationUid = null;
     activeBoundUid = uid;
     attachRealtimeListeners(uid);
@@ -242,7 +253,7 @@ async function runGuestMigration(
     }
   } catch {
     if (seq !== syncSessionSeq || currentUid.value !== uid) return;
-    migratingUid = null;
+    migratingUid.value = null;
     // Keep local guest data intact & retry automatically once connection returns
     retryMigrationUid = uid;
   }
@@ -252,21 +263,21 @@ function handleUidTransition(uid: string | null): void {
   const seq = ++syncSessionSeq;
 
   if (!uid) {
-    migratingUid = null;
+    migratingUid.value = null;
     retryMigrationUid = null;
     activeBoundUid = null;
     attachRealtimeListeners(null);
     return;
   }
 
-  if (uid === activeBoundUid && migratingUid === null) return;
+  if (uid === activeBoundUid && migratingUid.value === null) return;
 
   const ownerUid = readStorage<string | null>(SYNC_OWNER_KEY, null);
 
   // Different account on the same device: isolate local caches before loading the new account
   if (ownerUid && ownerUid !== uid) {
     clearLocalUserSessionData();
-    writeStorage(SYNC_OWNER_KEY, uid);
+    setSyncOwner(uid);
     activeBoundUid = uid;
     attachRealtimeListeners(uid);
     return;
@@ -274,6 +285,7 @@ function handleUidTransition(uid: string | null): void {
 
   // Same account returning / reloading: bind realtime Firestore listeners right away
   if (ownerUid === uid) {
+    syncOwnerUid.value = uid;
     activeBoundUid = uid;
     attachRealtimeListeners(uid);
     return;
@@ -282,7 +294,7 @@ function handleUidTransition(uid: string | null): void {
   // Unclaimed guest data -> auto-sync & merge non-destructively into cloud BEFORE listening
   const local = collectLocalGuestSnapshot();
   if (!hasMeaningfulGuestData(local)) {
-    writeStorage(SYNC_OWNER_KEY, uid);
+    setSyncOwner(uid);
     activeBoundUid = uid;
     attachRealtimeListeners(uid);
     return;
@@ -296,7 +308,7 @@ function handleUidTransition(uid: string | null): void {
  * while preserving device preferences (theme, font sizes, reciter, offline Quran cache).
  */
 export function clearLocalUserSessionData(): void {
-  removeStorage(SYNC_OWNER_KEY);
+  setSyncOwner(null);
   clearLocalLibrary();
   clearLocalProgress();
   clearLocalHifz();
@@ -323,15 +335,43 @@ export function bootstrapAppStores(): void {
     initOfflineSync();
   }
 
-  // Record ayahs read when audio finishes an ayah
+  // Record ayahs read & silently update lastRead when audio finishes an ayah
   onAyahAudioCompleted((ayah) => {
     recordReadAyahs([ayah.i]);
+    setLastRead(
+      {
+        surahId: ayah.surahId,
+        ayahNumber: ayah.n,
+        globalAyahId: ayah.i,
+        page: ayah.page,
+        juz: ayah.juz,
+      },
+      { silent: true }
+    );
+  });
+
+  // Automatically save lastRead when user pauses or stops audio playback
+  onAyahAudioPausedOrStopped((ayah) => {
+    recordReadAyahs([ayah.i]);
+    const alreadySaved = lastRead.value?.globalAyahId === ayah.i;
+    setLastRead(
+      {
+        surahId: ayah.surahId,
+        ayahNumber: ayah.n,
+        globalAyahId: ayah.i,
+        page: ayah.page,
+        juz: ayah.juz,
+      },
+      alreadySaved
+        ? { silent: true }
+        : { toastMessage: `Bacaan terakhir disimpan otomatis (Ayat ${ayah.n}).` }
+    );
   });
 
   // Retry guest-to-cloud sync if login happened while connection was temporarily offline
   window.addEventListener('online', () => {
     const uid = retryMigrationUid;
-    if (uid && currentUid.value === uid && migratingUid === null) {
+    if (uid && currentUid.value === uid && migratingUid.value === null) {
       const ownerUid = readStorage<string | null>(SYNC_OWNER_KEY, null);
       if (!ownerUid) {
         const local = collectLocalGuestSnapshot();
@@ -346,13 +386,29 @@ export function bootstrapAppStores(): void {
     handleUidTransition(currentUid.value);
   });
 
-  // Apply profile synced fields (lastRead, readingGoal, reminder) once ownership is synced
+  // Reconcile profile synced fields (lastRead, readingGoal, reminder) reactively across devices
   effect(() => {
     const prof = userProfile.value;
     const uid = currentUid.value;
-    if (!prof || !uid || migratingUid === uid) return;
-    if (readStorage<string | null>(SYNC_OWNER_KEY, null) !== uid) return;
-    if (prof.lastRead) applySyncedLastRead(prof.lastRead);
+    const owner = syncOwnerUid.value;
+    const migrating = migratingUid.value;
+    if (!prof || !uid || migrating === uid || owner !== uid) return;
+
+    const localLr = lastRead.value;
+    const cloudLr = prof.lastRead ?? null;
+    if (cloudLr && (!localLr || cloudLr.updatedAt >= localLr.updatedAt)) {
+      if (
+        !localLr ||
+        localLr.globalAyahId !== cloudLr.globalAyahId ||
+        localLr.updatedAt !== cloudLr.updatedAt
+      ) {
+        applySyncedLastRead(cloudLr);
+      }
+    } else if (localLr && (!cloudLr || localLr.updatedAt > cloudLr.updatedAt)) {
+      // Self-heal: push newer local lastRead up to Firestore so other devices receive it
+      upsertUserProfile(uid, { lastRead: localLr }).catch(() => {});
+    }
+
     if (prof.readingGoal !== undefined) applySyncedReadingGoal(prof.readingGoal);
     if (prof.reminder) applySyncedReminder(prof.reminder);
   });

@@ -75,7 +75,7 @@ export function AudioPlayerBar() {
   return (
     <>
       <div
-        class="fixed inset-x-0 bottom-14 z-40 border-t border-[var(--border)] bg-[var(--card)] lg:bottom-0 lg:left-64"
+        class="fixed inset-x-0 bottom-14 z-30 border-t border-[var(--border)] bg-[var(--card)] lg:bottom-0 lg:left-64"
         role="region"
         aria-label="Pemutar audio murottal"
       >

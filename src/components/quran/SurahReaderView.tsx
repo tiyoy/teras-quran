@@ -25,7 +25,7 @@ import {
   scrollAyahIntoView,
   togglePlay,
 } from '@/stores/audio-player';
-import { isSurahSaved, toggleSavedSurah } from '@/stores/library';
+import { isSurahSaved, setLastRead, toggleSavedSurah } from '@/stores/library';
 import { recordReadAyahs } from '@/stores/progress';
 import { readerSettings, updateReaderSettings } from '@/stores/reader-settings';
 import { Badge, Button, Card } from '@/components/ui/Primitives';
@@ -53,6 +53,9 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
   const [targetAyah, setTargetAyah] = useState<number | null>(null);
   const [visibleCount, setVisibleCount] = useState(40);
   const lastScrolledAyahId = useRef<number | null>(null);
+  const manualLockUntilScrollRef = useRef(false);
+  const pendingAutoAyahRef = useRef<Ayah | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const syncId = () => setSurahId(parseSurahIdFromUrl(initialSurahId));
@@ -156,6 +159,99 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
 
     return () => window.cancelAnimationFrame(rafId);
   }, [autoScroll, loading, activeInThisSurah?.i, activeInThisSurah?.n, visibleCount]);
+
+  // Automatically track last-read ayah as user reads/scrolls (paused after manual card tap until next scroll)
+  useEffect(() => {
+    if (loading || !ayahs.length || typeof IntersectionObserver === 'undefined') return;
+
+    const ayahByNum = new Map<number, Ayah>(ayahs.map((a) => [a.n, a]));
+    const visibleNums = new Set<number>();
+    let readyForAuto = false;
+
+    const commitAuto = (ayah: Ayah) => {
+      recordReadAyahs([ayah.i]);
+      setLastRead(
+        {
+          surahId: ayah.surahId,
+          ayahNumber: ayah.n,
+          globalAyahId: ayah.i,
+          page: ayah.page,
+          juz: ayah.juz,
+        },
+        { silent: true }
+      );
+    };
+
+    const scheduleAutoSave = () => {
+      if (!readyForAuto || manualLockUntilScrollRef.current || !visibleNums.size) return;
+      const anchor = Math.max(...visibleNums);
+      const ayah = ayahByNum.get(anchor);
+      if (!ayah) return;
+      pendingAutoAyahRef.current = ayah;
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = setTimeout(() => {
+        autoSaveTimerRef.current = null;
+        if (!manualLockUntilScrollRef.current && pendingAutoAyahRef.current) {
+          commitAuto(pendingAutoAyahRef.current);
+          pendingAutoAyahRef.current = null;
+        }
+      }, 1200);
+    };
+
+    const onScroll = () => {
+      readyForAuto = true;
+      if (manualLockUntilScrollRef.current) {
+        manualLockUntilScrollRef.current = false;
+      }
+      scheduleAutoSave();
+    };
+
+    const onFlush = () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      if (!manualLockUntilScrollRef.current && pendingAutoAyahRef.current) {
+        commitAuto(pendingAutoAyahRef.current);
+        pendingAutoAyahRef.current = null;
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const num = Number((entry.target as HTMLElement).dataset.ayahNum || 0);
+          if (!num) continue;
+          if (entry.isIntersecting) visibleNums.add(num);
+          else visibleNums.delete(num);
+        }
+        scheduleAutoSave();
+      },
+      { rootMargin: '-12% 0px -45% 0px', threshold: 0.2 }
+    );
+
+    const els = document.querySelectorAll<HTMLElement>('article[data-ayah-num]');
+    els.forEach((el) => observer.observe(el));
+
+    // Allow initial jump/scroll to settle before auto-saving on dwell
+    const readyTimer = setTimeout(() => {
+      readyForAuto = true;
+      scheduleAutoSave();
+    }, 1800);
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('pagehide', onFlush);
+    document.addEventListener('visibilitychange', onFlush);
+
+    return () => {
+      clearTimeout(readyTimer);
+      onFlush();
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('pagehide', onFlush);
+      document.removeEventListener('visibilitychange', onFlush);
+    };
+  }, [loading, surahId, ayahs, visibleCount]);
 
   const firstPage = ayahs[0]?.page ?? 1;
   const displayed = ayahs.slice(0, visibleCount);
@@ -295,6 +391,15 @@ export function SurahReaderView({ surahId: initialSurahId }: { surahId: number }
             queue={ayahs}
             tajwidSegments={settings.tajwid ? tajwidMap.get(ayah.n) : undefined}
             highlighted={targetAyah === ayah.n}
+            enableTapLastRead
+            onManualLastRead={() => {
+              manualLockUntilScrollRef.current = true;
+              pendingAutoAyahRef.current = null;
+              if (autoSaveTimerRef.current) {
+                clearTimeout(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = null;
+              }
+            }}
           />
         ))}
       </div>
