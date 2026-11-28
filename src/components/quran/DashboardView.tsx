@@ -107,24 +107,14 @@ export function DashboardView() {
   return (
     <div class="space-y-6">
       {/* Header Greeting */}
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight">
-            {getGreeting()}
-            {name ? `, ${name}` : ''}
-          </h1>
-          <p class="mt-0.5 text-sm text-[var(--muted-foreground)]">
-            Semoga hari ini penuh keberkahan bersama Al-Qur&apos;an.
-          </p>
-        </div>
-        <Button
-          href={lr ? `/app/baca/${lr.surahId}?ayat=${lr.ayahNumber}` : '/app/surah'}
-          size="md"
-          class="hidden sm:inline-flex"
-        >
-          <BookOpen class="size-4" />
-          {lr && lrSurah ? `Lanjutkan ${lrSurah.name}:${lr.ayahNumber}` : 'Mulai membaca'}
-        </Button>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">
+          {getGreeting()}
+          {name ? `, ${name}` : ''}
+        </h1>
+        <p class="mt-0.5 text-sm text-[var(--muted-foreground)]">
+          Semoga hari ini penuh keberkahan bersama Al-Qur&apos;an.
+        </p>
       </div>
 
       {/* Continue Reading / Quick Start */}
