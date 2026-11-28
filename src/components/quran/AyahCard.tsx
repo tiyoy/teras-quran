@@ -353,7 +353,7 @@ export function AyahCard({
 
           {menuOpen && menuPos && (
             <>
-              <div class="fixed inset-0 z-[50]" onClick={() => setMenuOpen(false)} />
+              <div class="fixed inset-0 z-[50] bg-black/30" onClick={() => setMenuOpen(false)} />
               <div
                 ref={menuPanelRef}
                 role="menu"
@@ -362,8 +362,9 @@ export function AyahCard({
                   ...(menuPos.top !== undefined ? { top: `${menuPos.top}px` } : {}),
                   ...(menuPos.bottom !== undefined ? { bottom: `${menuPos.bottom}px` } : {}),
                   maxHeight: `${menuPos.maxHeight}px`,
+                  backgroundColor: 'var(--popover)',
                 }}
-                class="fixed z-[55] w-56 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1.5 text-sm text-[var(--popover-foreground)]"
+                class="fixed z-[55] w-56 overflow-y-auto rounded-xl border border-[var(--input)] bg-[var(--popover)] p-1.5 text-sm text-[var(--popover-foreground)] shadow-lg"
               >
                 <button
                   type="button"
@@ -377,7 +378,7 @@ export function AyahCard({
                     });
                     setMenuOpen(false);
                   }}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <Bookmark class="size-4 text-[var(--primary)]" />
                   Tandai bacaan terakhir
@@ -385,7 +386,7 @@ export function AyahCard({
                 <a
                   href={`/app/tafsir?surah=${ayah.surahId}&ayat=${ayah.n}`}
                   onClick={() => setMenuOpen(false)}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[var(--foreground)] hover:bg-[var(--muted)] no-underline"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[var(--foreground)] hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] no-underline"
                 >
                   <BookOpen class="size-4 text-[var(--muted-foreground)]" />
                   Buka tafsir
@@ -397,7 +398,7 @@ export function AyahCard({
                     setNoteOpen(true);
                     setMenuOpen(false);
                   }}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <NotebookPen class="size-4 text-[var(--muted-foreground)]" />
                   Catatan
@@ -408,7 +409,7 @@ export function AyahCard({
                     setColOpen(true);
                     setMenuOpen(false);
                   }}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <FolderPlus class="size-4 text-[var(--muted-foreground)]" />
                   Tambah ke koleksi
@@ -421,7 +422,7 @@ export function AyahCard({
                     setHifzOpen(true);
                     setMenuOpen(false);
                   }}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <BookHeart class="size-4 text-[var(--muted-foreground)]" />
                   Tandai hafalan
@@ -430,7 +431,7 @@ export function AyahCard({
                 <button
                   type="button"
                   onClick={copyAyahText}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <Copy class="size-4 text-[var(--muted-foreground)]" />
                   Salin ayat
@@ -438,7 +439,7 @@ export function AyahCard({
                 <button
                   type="button"
                   onClick={shareAyahText}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <Share2 class="size-4 text-[var(--muted-foreground)]" />
                   Bagikan teks
@@ -449,7 +450,7 @@ export function AyahCard({
                     setShareOpen(true);
                     setMenuOpen(false);
                   }}
-                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] cursor-pointer"
+                  class="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left hover:bg-[var(--muted)] dark:hover:bg-[var(--border)] cursor-pointer"
                 >
                   <ImageIcon class="size-4 text-[var(--muted-foreground)]" />
                   Bagikan gambar
