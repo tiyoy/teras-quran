@@ -139,7 +139,10 @@ export const MOBILE_NAV_GROUPS: readonly MobileNavGroupDef[] = [
     label: 'Pribadi',
     title: 'Pribadi',
     icon: Bookmark,
-    items: NAV_GROUPS[1].items,
+    items: [
+      ...NAV_GROUPS[1].items,
+      { href: '/app/cari', label: 'Cari ayat', description: 'Kata atau nomor ayat', icon: Search },
+    ],
   },
   {
     id: 'ibadah',
