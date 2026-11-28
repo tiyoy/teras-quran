@@ -22,6 +22,8 @@ const PRAYER_META: Array<{ key: PrayerName; label: string; icon: typeof Sun }> =
   { key: 'isha', label: 'Isya', icon: Moon },
 ];
 
+const DAY_SHORT_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'] as const;
+
 function formatCountdown(ms: number): string {
   const totalMin = Math.max(0, Math.floor(ms / 60_000));
   if (totalMin < 1) return 'kurang dari 1 menit';
@@ -164,37 +166,79 @@ export function PrayerTimesView() {
           </h2>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs tabular-nums">
+          <table class="w-full min-w-[640px] table-fixed text-xs">
+            <colgroup>
+              <col class="w-[16%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+              <col class="w-[12%]" />
+            </colgroup>
             <thead class="border-b border-[var(--border)] bg-[var(--muted)]/60 text-[var(--muted-foreground)]">
               <tr>
-                <th class="px-4 py-2.5 font-semibold">Tanggal</th>
-                <th class="px-3 py-2.5 font-semibold">Imsak</th>
-                <th class="px-3 py-2.5 font-semibold">Subuh</th>
-                <th class="px-3 py-2.5 font-semibold">Terbit</th>
-                <th class="px-3 py-2.5 font-semibold">Dzuhur</th>
-                <th class="px-3 py-2.5 font-semibold">Ashar</th>
-                <th class="px-3 py-2.5 font-semibold">Maghrib</th>
-                <th class="px-3 py-2.5 font-semibold">Isya</th>
+                <th class="py-2.5 pl-5 pr-3 text-left font-semibold">Tanggal</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Imsak</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Subuh</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Terbit</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Dzuhur</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Ashar</th>
+                <th class="px-2 py-2.5 text-center font-semibold">Maghrib</th>
+                <th class="py-2.5 pl-2 pr-5 text-center font-semibold">Isya</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--border)]">
               {monthRows.map((row) => {
-                const isToday = row.date.getDate() === todayNum;
+                const dayNum = row.date.getDate();
+                const isToday = dayNum === todayNum;
                 return (
                   <tr
                     key={row.date.toISOString()}
-                    class={isToday ? 'bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]' : ''}
+                    class={
+                      isToday
+                        ? 'bg-[var(--accent)] font-semibold text-[var(--accent-foreground)]'
+                        : 'transition-colors hover:bg-[var(--muted)]/40'
+                    }
                   >
-                    <td class="whitespace-nowrap px-4 py-2.5">
-                      {new Intl.DateTimeFormat('id-ID', { day: 'numeric', weekday: 'short' }).format(row.date)}
+                    <td class="whitespace-nowrap py-2.5 pl-5 pr-3 text-left">
+                      <span class="inline-flex items-center gap-2">
+                        <span class="inline-block w-5 font-mono font-medium tabular-nums">
+                          {String(dayNum).padStart(2, '0')}
+                        </span>
+                        <span
+                          class={
+                            isToday
+                              ? 'text-[var(--accent-foreground)]'
+                              : 'text-[var(--muted-foreground)]'
+                          }
+                        >
+                          {DAY_SHORT_ID[row.date.getDay()]}
+                        </span>
+                      </span>
                     </td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.imsak, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.fajr, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.sunrise, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.dhuhr, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.asr, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.maghrib, loc.timezone)}</td>
-                    <td class="px-3 py-2.5">{formatPrayerClock(row.isha, loc.timezone)}</td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.imsak, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.fajr, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.sunrise, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.dhuhr, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.asr, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap px-2 py-2.5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.maghrib, loc.timezone)}
+                    </td>
+                    <td class="whitespace-nowrap py-2.5 pl-2 pr-5 text-center font-mono tabular-nums tracking-tight">
+                      {formatPrayerClock(row.isha, loc.timezone)}
+                    </td>
                   </tr>
                 );
               })}
