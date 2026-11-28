@@ -307,10 +307,11 @@ export function ProgressView() {
                 return (
                   <li
                     key={d.date}
-                    class="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                    class="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 px-4 py-3 text-center text-sm"
                   >
-                    <span class="min-w-0 truncate text-[var(--foreground)]">{label}</span>
-                    <span class="shrink-0 whitespace-nowrap font-semibold tabular-nums text-[var(--primary)]">
+                    <span class="text-[var(--foreground)]">{label}</span>
+                    <span class="text-[var(--muted-foreground)]" aria-hidden="true">·</span>
+                    <span class="whitespace-nowrap font-semibold tabular-nums text-[var(--primary)]">
                       {d.ayahCount.toLocaleString('id-ID')} ayat
                     </span>
                   </li>
